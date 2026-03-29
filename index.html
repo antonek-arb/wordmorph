@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ordmorf – Morfologiövningar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a1a; --accent-1: #7c3aed; --accent-2: #06b6d4; --accent-3: #f59e0b;
+  --correct: #10b981; --wrong: #ef4444; --text: #f0f0ff;
+  --text-dim: rgba(240,240,255,.55); --glass: rgba(255,255,255,.07);
+  --glass-b: rgba(255,255,255,.12); --font:'Inter',system-ui,sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font);position:relative}
+
+/* BACKGROUND */
+#bg{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 50%,rgba(124,58,237,.35) 0%,transparent 65%),
+    radial-gradient(ellipse 50% 40% at 85% 20%,rgba(6,182,212,.25) 0%,transparent 55%),
+    radial-gradient(ellipse 40% 60% at 55% 85%,rgba(236,72,153,.2) 0%,transparent 60%),
+    var(--bg);
+  animation:bgshift 22s ease-in-out infinite alternate}
+@keyframes bgshift{0%{filter:hue-rotate(0deg) brightness(1)}50%{filter:hue-rotate(25deg) brightness(1.05)}100%{filter:hue-rotate(-18deg) brightness(.95)}}
+
+/* HUD */
+#hud{display:none;position:fixed;top:0;left:0;right:0;z-index:100;
+  align-items:center;gap:10px;padding:10px 18px;
+  background:rgba(10,10,26,.88);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--glass-b)}
+#score{font-size:1.9rem;font-weight:800;color:var(--accent-3);text-shadow:0 0 22px var(--accent-3);min-width:64px}
+#hud-theme{flex:1;font-size:.95rem;color:var(--text-dim);text-align:center}
+#word-count{font-size:1.15rem;font-weight:700;color:var(--accent-2);text-shadow:0 0 14px var(--accent-2);min-width:80px;text-align:right}
+.hbtn{background:var(--glass);border:1px solid var(--glass-b);color:var(--text);
+  width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:1.1rem;
+  display:flex;align-items:center;justify-content:center;transition:background .2s}
+.hbtn:hover{background:rgba(255,255,255,.15)}
+
+/* GAME FIELD */
+#field{position:fixed;inset:0;z-index:10;pointer-events:none}
+#field.live{pointer-events:auto}
+
+/* PROGRESS BAR */
+#prog-wrap{display:none;position:fixed;bottom:0;left:0;right:0;height:4px;background:rgba(255,255,255,.08);z-index:100}
+#prog{height:100%;width:0;transition:width .5s;
+  background:linear-gradient(90deg,var(--accent-1),var(--accent-2));box-shadow:0 0 8px var(--accent-1)}
+
+/* WORD BUBBLES */
+.wb{position:fixed;padding:10px 22px;background:var(--glass);border:1px solid var(--glass-b);
+  border-radius:50px;backdrop-filter:blur(8px);font-weight:600;cursor:pointer;
+  user-select:none;white-space:nowrap;color:var(--text);
+  transition:filter .15s,opacity .5s,transform .1s;pointer-events:auto;opacity:0}
+.wb.visible{opacity:1}
+.wb.fading{opacity:0!important;pointer-events:none}
+.wb:hover{filter:brightness(1.5) drop-shadow(0 0 12px var(--accent-2))}
+.wb.target-word{border-color:rgba(124,58,237,.35);color:#ded8ff}
+.wb.wf-correct{animation:pop-ok .5s ease forwards!important;pointer-events:none}
+.wb.wf-wrong{border-color:rgba(239,68,68,.75)!important;background:rgba(239,68,68,.18)!important;color:#fca5a5!important}
+.wb.sz-s{font-size:1rem}.wb.sz-m{font-size:1.2rem}.wb.sz-l{font-size:1.42rem}.wb.sz-xl{font-size:1.7rem}
+
+/* MORPHEME HIGHLIGHT */
+.morpheme-hi{
+  background:rgba(251,191,36,.28);
+  color:#fde68a;
+  border-radius:4px;
+  padding:0 3px;
+  font-weight:900;
+  text-shadow:0 0 10px rgba(251,191,36,.75),0 0 20px rgba(251,191,36,.35);
+  letter-spacing:.02em;
+  animation:morpheme-pulse 2.2s ease-in-out infinite}
+@keyframes morpheme-pulse{
+  0%,100%{text-shadow:0 0 8px rgba(251,191,36,.6)}
+  50%{text-shadow:0 0 20px rgba(251,191,36,1),0 0 40px rgba(251,191,36,.4)}}
+/* In word-result list (Del 2) */
+.wr .morpheme-hi{animation:none;font-size:1.05em}
+
+/* rise – idle screen decorations */
+@keyframes rise{
+  0%{opacity:0;transform:translateY(0) translateX(0) rotate(var(--tilt,0deg))}
+  8%{opacity:.28}
+  80%{opacity:.18}
+  100%{opacity:0;transform:translateY(-105vh) translateX(var(--drift,0px)) rotate(var(--tilt,0deg))}}
+.wb.deco{animation:rise var(--rd,18s) ease-in forwards;pointer-events:none!important}
+
+@keyframes pop-ok{
+  0%{transform:scale(1);opacity:1;filter:none}
+  40%{transform:scale(1.55);opacity:1;filter:drop-shadow(0 0 22px var(--correct)) brightness(2)}
+  100%{transform:scale(.4);opacity:0;filter:drop-shadow(0 0 30px var(--correct))}}
+@keyframes score-pulse{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
+.do-pulse{animation:score-pulse .28s ease}
+@keyframes streak-glow{0%,100%{text-shadow:0 0 14px var(--accent-2)}50%{text-shadow:0 0 30px var(--accent-2),0 0 60px var(--accent-2)}}
+
+/* CONFETTI */
+.cp{position:fixed;pointer-events:none;z-index:200;animation:cpfly .85s ease-out forwards}
+@keyframes cpfly{0%{transform:translate(0,0) scale(1) rotate(0deg);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0) rotate(var(--cr));opacity:0}}
+
+/* SCREENS */
+.screen{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
+  padding:20px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .3s}
+.screen.on{opacity:1;pointer-events:auto}
+
+/* IDLE SCREEN */
+#s-idle{background:rgba(10,10,26,.8);backdrop-filter:blur(3px);flex-direction:column;gap:20px}
+.game-title h1{font-size:clamp(2rem,6vw,3.2rem);font-weight:800;letter-spacing:-1px;text-align:center;
+  background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.game-title p{text-align:center;color:var(--text-dim);font-size:1.05rem;margin-top:6px}
+
+/* Level selector */
+.lvl-sel{display:flex;gap:8px;background:var(--glass);border:1px solid var(--glass-b);border-radius:12px;padding:6px}
+.lvl-btn{padding:10px 22px;border-radius:8px;border:none;background:transparent;
+  color:var(--text-dim);font-family:var(--font);font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s}
+.lvl-btn.on{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:white;box-shadow:0 0 14px rgba(124,58,237,.4)}
+
+/* Exercise grid */
+.ex-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:600px;width:100%}
+.ex-card{position:relative;overflow:hidden;background:var(--glass);border:1px solid var(--glass-b);
+  border-radius:16px;padding:22px;cursor:pointer;transition:all .2s;display:none}
+.ex-card.show{display:block}
+.ex-card::before{content:'';position:absolute;inset:0;opacity:.13;transition:opacity .2s}
+.ex-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.22);box-shadow:0 10px 36px rgba(0,0,0,.4)}
+.ex-card:hover::before{opacity:.28}
+.ec-icon{font-size:2.1rem;display:block;margin-bottom:9px}
+.ec-name{font-weight:700;font-size:1.08rem;margin-bottom:4px}
+.ec-sub{font-size:.85rem;color:var(--text-dim)}
+.ec-level{position:absolute;top:10px;right:10px;font-size:.75rem;font-weight:700;
+  padding:3px 10px;border-radius:20px;background:rgba(0,0,0,.3);color:var(--text-dim)}
+
+.ex-card[data-id^="f1"]::before{background:linear-gradient(135deg,#f59e0b,#10b981)}
+.ex-card[data-id^="23"]::before{background:linear-gradient(135deg,#7c3aed,#06b6d4)}
+.ex-card[data-id^="46"]::before{background:linear-gradient(135deg,#ec4899,#7c3aed)}
+.ex-card[data-id="ai"]::before{background:linear-gradient(135deg,#f59e0b,#10b981)}
+.ex-card[data-id="ai"]{grid-column:span 2}
+
+.ai-form{display:flex;flex-direction:column;gap:8px}
+.ai-inp{background:rgba(0,0,0,.3);border:1px solid var(--glass-b);border-radius:8px;
+  padding:9px 13px;color:var(--text);font-family:var(--font);font-size:.85rem;outline:none;width:100%}
+.ai-inp:focus{border-color:var(--accent-2);box-shadow:0 0 0 2px rgba(6,182,212,.18)}
+.ai-go{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:none;border-radius:8px;
+  padding:9px 16px;color:white;font-family:var(--font);font-weight:700;font-size:.82rem;cursor:pointer;transition:opacity .2s}
+.ai-go:hover{opacity:.85}.ai-go:disabled{opacity:.45;cursor:not-allowed}
+#ai-status{font-size:.73rem;color:var(--text-dim);min-height:16px}
+
+/* DEL 2 – EXPLAIN */
+#s-explain{flex-direction:column;gap:18px;background:rgba(10,10,26,.88);backdrop-filter:blur(6px)}
+.del-label{font-size:.88rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;text-align:center}
+.explain-box{background:var(--glass);border:1px solid var(--glass-b);border-radius:16px;
+  padding:26px;max-width:620px;width:100%;display:flex;flex-direction:column;gap:16px}
+.explain-title{font-size:1.25rem;font-weight:700}
+.word-results{display:flex;flex-wrap:wrap;gap:10px}
+.wr{padding:8px 16px;border-radius:30px;font-size:1rem;font-weight:600}
+.wr.hit{background:rgba(16,185,129,.18);border:1px solid rgba(16,185,129,.4);color:#6ee7b7}
+.wr.miss{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+.explain-text{font-size:1.05rem;line-height:1.7;color:var(--text)}
+.contrast-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:16px}
+.contrast-word{font-weight:800;color:#fca5a5;font-size:1.25rem}
+.contrast-reason{font-size:.95rem;color:var(--text-dim);margin-top:6px;line-height:1.6}
+.score-row{display:flex;gap:20px;align-items:center}
+.score-chip{text-align:center}
+.score-chip-val{font-size:1.6rem;font-weight:800}
+.score-chip-lbl{font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+
+/* DEL 3 – TRANSFER */
+#s-transfer{flex-direction:column;gap:16px;background:rgba(10,10,26,.88);backdrop-filter:blur(6px)}
+.transfer-list{display:flex;flex-direction:column;gap:18px;max-width:620px;width:100%}
+.ti{background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.ti-q{font-size:1.08rem;font-weight:600;line-height:1.6}
+.ti-opts{display:flex;flex-wrap:wrap;gap:10px}
+.t-opt{background:rgba(255,255,255,.06);border:1px solid var(--glass-b);border-radius:30px;
+  padding:10px 20px;color:var(--text);font-family:var(--font);font-size:1rem;cursor:pointer;transition:all .18s}
+.t-opt:hover:not(:disabled){background:rgba(255,255,255,.12);border-color:var(--accent-2)}
+.t-opt.t-correct{background:rgba(16,185,129,.2);border-color:var(--correct);color:#6ee7b7;pointer-events:none}
+.t-opt.t-wrong{background:rgba(239,68,68,.15);border-color:var(--wrong);color:#fca5a5}
+.t-opt:disabled{cursor:not-allowed;opacity:.6}
+.ti-fill-row{display:flex;gap:10px;align-items:center}
+.ti-input{background:rgba(0,0,0,.3);border:1px solid var(--glass-b);border-radius:8px;
+  padding:11px 16px;color:var(--text);font-family:var(--font);font-size:1.05rem;outline:none;flex:1}
+.ti-input:focus{border-color:var(--accent-2)}
+.ti-check-btn{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:none;
+  border-radius:8px;width:46px;height:46px;color:white;font-size:1.2rem;cursor:pointer;flex-shrink:0}
+.ti-check-btn:disabled{opacity:.4;cursor:not-allowed}
+.ti-feedback{font-size:.95rem;font-weight:600;min-height:20px}
+.ti-hint{font-size:.88rem;color:var(--text-dim);min-height:16px}
+
+/* RESULTS SCREEN */
+#s-res{flex-direction:column;gap:20px;text-align:center}
+.res-pts{font-size:clamp(3.5rem,12vw,5.5rem);font-weight:800;color:var(--accent-3);text-shadow:0 0 32px var(--accent-3)}
+.res-lbl{font-size:.9rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px}
+.res-stats{display:flex;gap:28px;justify-content:center;align-items:center}
+.res-stat-val{font-size:1.6rem;font-weight:700}
+.res-stat-lbl{font-size:.82rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.missed-box{background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;
+  padding:20px;max-width:500px;width:100%;text-align:left}
+.missed-box h3{font-size:.88rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.missed-tags{display:flex;flex-wrap:wrap;gap:8px}
+.mt{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.3);color:#fca5a5;padding:6px 14px;border-radius:20px;font-size:.95rem}
+
+/* SHARED BUTTONS */
+.btn-p{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:none;border-radius:12px;
+  padding:15px 44px;color:white;font-family:var(--font);font-weight:700;font-size:1.1rem;
+  cursor:pointer;box-shadow:0 4px 22px rgba(124,58,237,.4);transition:all .2s}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(124,58,237,.5)}
+.btn-s{background:var(--glass);border:1px solid var(--glass-b);border-radius:12px;
+  padding:13px 34px;color:var(--text);font-family:var(--font);font-weight:600;font-size:1rem;
+  cursor:pointer;transition:all .2s}
+.btn-s:hover{background:rgba(255,255,255,.12)}
+.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* SETTINGS */
+#s-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;opacity:0;pointer-events:none;transition:opacity .3s}
+#s-overlay.on{opacity:1;pointer-events:auto}
+#s-panel{position:fixed;top:0;right:-110%;width:370px;max-width:92vw;height:100vh;overflow-y:auto;
+  background:#11112a;border-left:1px solid var(--glass-b);z-index:160;padding:24px;
+  display:flex;flex-direction:column;gap:18px;transition:right .3s ease}
+#s-panel.on{right:0}
+.sp-title{font-size:1.3rem;font-weight:700;padding-bottom:16px;border-bottom:1px solid var(--glass-b);
+  display:flex;justify-content:space-between;align-items:center}
+.sp-close{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.5rem;line-height:1}
+.sp-grp{display:flex;flex-direction:column;gap:9px}
+.sp-lbl{font-size:.88rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;display:flex;justify-content:space-between}
+.sp-val{color:var(--accent-2);font-weight:700}
+.sp-inp{background:rgba(0,0,0,.3);border:1px solid var(--glass-b);border-radius:8px;
+  padding:12px 15px;color:var(--text);font-family:var(--font);font-size:1rem;outline:none;width:100%}
+.sp-inp:focus{border-color:var(--accent-2)}
+.sp-range{width:100%;accent-color:var(--accent-1)}
+.sp-note{font-size:.88rem;color:var(--text-dim);line-height:1.6}
+.sp-info{padding:14px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);
+  border-radius:8px;font-size:.88rem;color:var(--text-dim);line-height:1.65}
+
+/* PAUSE */
+#pause-ov{position:fixed;inset:0;background:rgba(10,10,26,.88);backdrop-filter:blur(8px);z-index:80;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+#pause-ov.on{opacity:1;pointer-events:auto}
+.pause-txt{font-size:2.6rem;font-weight:800}
+
+@media(max-width:480px){
+  .ex-grid{gap:8px}.ex-card{padding:13px}.lvl-sel{gap:6px}.lvl-btn{font-size:.75rem;padding:7px 12px}
+  .wb{padding:12px 16px}#s-panel{width:100%;max-width:100vw}
+  .res-stats{gap:14px}
+}
+@media(max-width:360px){
+  .ex-grid{grid-template-columns:1fr}.ex-card[data-id="ai"]{grid-column:span 1}
+}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+
+<!-- HUD (Del 1) -->
+<header id="hud">
+  <div id="score">0</div>
+  <div id="hud-theme"></div>
+  <div id="word-count"></div>
+  <button class="hbtn" id="btn-home" title="Tillbaka till menyn" style="font-size:.9rem">🏠</button>
+  <button class="hbtn" id="btn-pause" title="Paus">⏸</button>
+  <button class="hbtn" id="btn-settings" title="Inställningar">⚙</button>
+</header>
+
+<div id="field"></div>
+<div id="prog-wrap"><div id="prog"></div></div>
+
+<div id="pause-ov">
+  <div class="pause-txt">⏸ Paus</div>
+  <p style="color:var(--text-dim);margin-bottom:8px">Klicka var som helst för att fortsätta</p>
+  <button id="btn-pause-home" class="btn-s" style="font-size:.85rem;padding:10px 24px" onclick="goHome()">🏠 Tillbaka till menyn</button>
+</div>
+
+<!-- ── IDLE ── -->
+<div id="s-idle" class="screen on">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:540px">
+    <div class="game-title">
+      <h1>Ordmorf</h1>
+      <p>Klicka på rätt ord — lär dig se mönster i ord</p>
+    </div>
+
+    <div class="lvl-sel">
+      <button class="lvl-btn on" data-level="F1">F–1</button>
+      <button class="lvl-btn" data-level="23">2–3</button>
+      <button class="lvl-btn" data-level="46">4–6</button>
+    </div>
+
+    <div class="ex-grid" id="ex-grid">
+      <!-- F-1 exercises -->
+      <div class="ex-card show" data-id="f1-plural" data-level="F1">
+        <span class="ec-level">F–1</span>
+        <span class="ec-icon">🔢</span>
+        <div class="ec-name">Fler än en sak</div>
+        <div class="ec-sub">Klicka på alla ord om flera saker</div>
+      </div>
+      <div class="ex-card show" data-id="f1-bestämd" data-level="F1">
+        <span class="ec-level">F–1</span>
+        <span class="ec-icon">👆</span>
+        <div class="ec-name">Den speciella saken</div>
+        <div class="ec-sub">Klicka på orden om EN speciell sak</div>
+      </div>
+
+      <!-- 2-3 exercises -->
+      <div class="ex-card" data-id="23-preteritum" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">⏮</span>
+        <div class="ec-name">Det hände igår</div>
+        <div class="ec-sub">Hitta ord som berättar om det förflutna</div>
+      </div>
+      <div class="ex-card" data-id="23-presens" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">▶️</span>
+        <div class="ec-name">Det händer nu</div>
+        <div class="ec-sub">Hitta ord som berättar om det som pågår</div>
+      </div>
+      <div class="ex-card" data-id="23-komparativ" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">⚖️</span>
+        <div class="ec-name">Mer av något</div>
+        <div class="ec-sub">Hitta ord som jämför</div>
+      </div>
+
+      <!-- 4-6 exercises -->
+      <div class="ex-card" data-id="46-person-are" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">👷</span>
+        <div class="ec-name">Personsuffix -are</div>
+        <div class="ec-sub">En person som gör något</div>
+      </div>
+      <div class="ex-card" data-id="46-negation-o" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🚫</span>
+        <div class="ec-name">Negationsprefix o-</div>
+        <div class="ec-sub">Ordet betyder det MOTSATTA</div>
+      </div>
+      <div class="ex-card" data-id="46-sammansättning" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🧩</span>
+        <div class="ec-name">Sammansättningar: skol-</div>
+        <div class="ec-sub">Ord som börjar med skol-</div>
+      </div>
+
+      <!-- F-1 nya -->
+      <div class="ex-card show" data-id="f1-presens" data-level="F1">
+        <span class="ec-level">F–1</span>
+        <span class="ec-icon">▶️</span>
+        <div class="ec-name">Händer just nu</div>
+        <div class="ec-sub">Klicka på ord om vad som sker nu</div>
+      </div>
+      <div class="ex-card show" data-id="f1-sammansattning" data-level="F1">
+        <span class="ec-level">F–1</span>
+        <span class="ec-icon">🔗</span>
+        <div class="ec-name">Ord av två ord</div>
+        <div class="ec-sub">Hitta ord som är ihopsatta</div>
+      </div>
+
+      <!-- 2-3 nya -->
+      <div class="ex-card" data-id="23-bestämd-plural" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">👥</span>
+        <div class="ec-name">Flera bestämda saker</div>
+        <div class="ec-sub">Hitta -arna, -erna, -orna, -en</div>
+      </div>
+      <div class="ex-card" data-id="23-starka-verb" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">⚡</span>
+        <div class="ec-name">Knepiga igårord</div>
+        <div class="ec-sub">Oregelbundna verb i dåtid</div>
+      </div>
+      <div class="ex-card" data-id="23-prefix-o" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">🔄</span>
+        <div class="ec-name">Prefix o– (motsats)</div>
+        <div class="ec-sub">o- vänder ordets betydelse</div>
+      </div>
+
+      <div class="ex-card" data-id="23-prefix-miss" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">❌</span>
+        <div class="ec-name">Prefix miss–</div>
+        <div class="ec-sub">miss- gör att något görs FEL</div>
+      </div>
+
+      <!-- 4-6 nya -->
+      <div class="ex-card" data-id="46-superlativ" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🏆</span>
+        <div class="ec-name">Superlativ (–ast)</div>
+        <div class="ec-sub">Det allra mest av något</div>
+      </div>
+      <div class="ex-card" data-id="46-prefix-be" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🔧</span>
+        <div class="ec-name">Prefix be–</div>
+        <div class="ec-sub">be- ger verbet ny innebörd</div>
+      </div>
+      <div class="ex-card" data-id="46-prefix-for" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🔀</span>
+        <div class="ec-name">Prefix för–</div>
+        <div class="ec-sub">för- tillför ny riktning</div>
+      </div>
+      <div class="ex-card" data-id="46-suffix-het" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">💭</span>
+        <div class="ec-name">Suffix –het</div>
+        <div class="ec-sub">Adjektiv blir abstrakta substantiv</div>
+      </div>
+      <div class="ex-card" data-id="46-suffix-ig" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">✨</span>
+        <div class="ec-name">Suffix –ig / –lig</div>
+        <div class="ec-sub">Substantiv blir egenskapsord</div>
+      </div>
+      <div class="ex-card" data-id="46-suffix-los" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">∅</span>
+        <div class="ec-name">Suffix –lös</div>
+        <div class="ec-sub">Ord som betyder "utan något"</div>
+      </div>
+      <div class="ex-card" data-id="46-ordfamiljer" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🌳</span>
+        <div class="ec-name">Ordfamilj: lär–</div>
+        <div class="ec-sub">Ord som delar roten lär–</div>
+      </div>
+
+      <!-- 2-3 nya övningstyper -->
+      <div class="ex-card" data-id="23-perfekt" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">⏱️</span>
+        <div class="ec-name">Perfekt (–at)</div>
+        <div class="ec-sub">Ord som går ihop med "har"</div>
+      </div>
+      <div class="ex-card" data-id="23-imperativ" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">📣</span>
+        <div class="ec-name">Imperativ</div>
+        <div class="ec-sub">Uppmaningsord – Spring! Skriv!</div>
+      </div>
+
+      <!-- 4-6 nya övningstyper -->
+      <div class="ex-card" data-id="46-prefix-sam" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🤝</span>
+        <div class="ec-name">Prefix sam–</div>
+        <div class="ec-sub">Göra något tillsammans</div>
+      </div>
+      <div class="ex-card" data-id="46-prefix-over" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">⬆️</span>
+        <div class="ec-name">Prefix över–</div>
+        <div class="ec-sub">Ovanpå, bortom, för mycket</div>
+      </div>
+      <div class="ex-card" data-id="46-prefix-under" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">⬇️</span>
+        <div class="ec-name">Prefix under–</div>
+        <div class="ec-sub">Under, grundläggande, för lite</div>
+      </div>
+      <div class="ex-card" data-id="46-suffix-skap" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🫂</span>
+        <div class="ec-name">Suffix –skap</div>
+        <div class="ec-sub">Förhållande och gemenskap</div>
+      </div>
+      <div class="ex-card" data-id="46-suffix-ning" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">📋</span>
+        <div class="ec-name">Suffix –ning</div>
+        <div class="ec-sub">Verb blir substantiv med –ning</div>
+      </div>
+      <div class="ex-card" data-id="46-ordfamiljer-fri" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🕊️</span>
+        <div class="ec-name">Ordfamilj: fri–</div>
+        <div class="ec-sub">Ord som delar roten fri–</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── DEL 2: FÖRKLARING ── -->
+<div id="s-explain" class="screen">
+  <div style="max-width:520px;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px">
+    <div class="del-label">Del 2 av 3 – Förklaring</div>
+
+    <div class="explain-box">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div class="explain-title" id="ex-title"></div>
+        <div class="score-row">
+          <div class="score-chip">
+            <div class="score-chip-val" id="ex-hits" style="color:var(--correct)"></div>
+            <div class="score-chip-lbl">Funna</div>
+          </div>
+          <div style="width:1px;height:32px;background:var(--glass-b)"></div>
+          <div class="score-chip">
+            <div class="score-chip-val" id="ex-miss" style="color:var(--wrong)"></div>
+            <div class="score-chip-lbl">Missade</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Målord</div>
+        <div class="word-results" id="ex-word-list"></div>
+      </div>
+
+      <div class="explain-text" id="ex-explanation"></div>
+
+      <div class="contrast-box">
+        <div style="font-size:.68rem;color:rgba(252,165,165,.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Varför hör detta ord INTE till?</div>
+        <div class="contrast-word" id="ex-c-word"></div>
+        <div class="contrast-reason" id="ex-c-reason"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-p" id="btn-to-transfer">Fortsätt till övning →</button>
+      <button class="btn-s" id="btn-home-from-explain">🏠 Välj ny övning</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DEL 3: ÖVERFÖRING ── -->
+<div id="s-transfer" class="screen">
+  <div style="max-width:520px;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px">
+    <div class="del-label">Del 3 av 3 – Använd mönstret</div>
+    <div style="font-size:.88rem;color:var(--text-dim);text-align:center;max-width:380px" id="transfer-instr"></div>
+    <div class="transfer-list" id="transfer-items"></div>
+    <div class="btn-row" id="transfer-btn-row" style="display:none">
+      <button class="btn-p" id="btn-to-results">Se resultat →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESULTAT ── -->
+<div id="s-res" class="screen">
+  <div style="max-width:420px;width:100%;display:flex;flex-direction:column;align-items:center;gap:18px">
+    <div class="res-lbl">Övningen klar!</div>
+    <div class="res-pts" id="res-pts">0</div>
+    <div class="res-lbl">poäng</div>
+    <div class="res-stats">
+      <div style="text-align:center">
+        <div class="res-stat-val" id="res-del1" style="color:var(--correct)">0/0</div>
+        <div class="res-stat-lbl">Ord (Del 1)</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--glass-b)"></div>
+      <div style="text-align:center">
+        <div class="res-stat-val" id="res-del3" style="color:var(--accent-2)">0/0</div>
+        <div class="res-stat-lbl">Uppgifter (Del 3)</div>
+      </div>
+    </div>
+    <div class="missed-box" id="missed-box">
+      <h3>Missade målord – öva på dessa!</h3>
+      <div class="missed-tags" id="missed-tags"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-p" id="btn-again">🔄 Gör om</button>
+      <button class="btn-s" id="btn-home">🏠 Välj övning</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div id="s-overlay"></div>
+<div id="s-panel">
+  <div class="sp-title">⚙ Lärare / Inställningar <button class="sp-close" id="sp-close">✕</button></div>
+
+  <div class="sp-grp">
+    <div class="sp-lbl">Ordstorlek och tempo <span class="sp-val" id="sp-rate-val">1.8s</span></div>
+    <input class="sp-range" id="sp-rate" type="range" min="700" max="3500" step="100" value="1800">
+    <div class="sp-note">Tid mellan varje nytt ord. Kortare = snabbare och svårare.</div>
+  </div>
+
+  <div style="border-top:1px solid var(--glass-b);padding-top:16px;display:flex;flex-direction:column;gap:14px">
+    <div style="font-size:.8rem;font-weight:700;color:var(--accent-2)">🤖 Generera ny övning med AI</div>
+    <div class="sp-grp">
+      <div class="sp-lbl">n8n Webhook-URL</div>
+      <input class="sp-inp" id="sp-webhook" type="url" placeholder="https://n8n.antonek.cc/webhook/...">
+    </div>
+    <div class="sp-grp">
+      <div class="sp-lbl">Beskriv övningen</div>
+      <input class="sp-inp" id="ai-inp" type="text" placeholder="T.ex. 'verb i presens -er' eller 'prefix be-'">
+    </div>
+    <div class="sp-grp">
+      <div class="sp-lbl">Nivå</div>
+      <div style="display:flex;gap:6px">
+        <button class="lvl-btn on" data-ai-level="F1" style="flex:1;font-size:.75rem;padding:6px 4px">F–1</button>
+        <button class="lvl-btn" data-ai-level="23" style="flex:1;font-size:.75rem;padding:6px 4px">2–3</button>
+        <button class="lvl-btn" data-ai-level="46" style="flex:1;font-size:.75rem;padding:6px 4px">4–6</button>
+      </div>
+    </div>
+    <button class="ai-go" id="ai-go" style="width:100%">✨ Generera och starta övning</button>
+    <div id="ai-status" style="font-size:.75rem;min-height:16px"></div>
+    <div class="sp-note">n8n-flödet tar emot <code style="color:var(--accent-2)">{"theme":"...","level":"..."}</code> och returnerar ett övningsobjekt. Inställningar sparas lokalt i webbläsaren.</div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  EXERCISE DATA  (3 delar: Urval, Förklaring, Överföring)
+// ══════════════════════════════════════════
+const EXERCISES = {
+  // ── F–1 ──────────────────────────────────
+  'f1-plural': {
+    level:'F1', targetPattern:'Plural',
+    teacherDescription:'Elever identifierar pluralformer av substantiv (alla böjningsgrupper blandade).',
+    studentInstruction:'Klicka på alla ord som pratar om FER ÄN EN sak!',
+    targetWords:['bilar','hundar','katter','hästar','böcker','fåglar','bollar','stugor'],
+    distractorWords:['bilen','hunden','katten','hästen','fågeln','boken','bollen','stugan','djuret','bordet','solen','natten','glaset','barnet','lampan','stolen','bil','katt','häst','blomma','hus','sol','dag','eld'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'De här orden pratar om FER ÄN EN sak. Bil → bilar. Hund → hundar. Katt → katter. Orden har fått en ny ändelse som visar att det är flera!',
+    contrastExample:{word:'bilen',reason:'"Bilen" pratar om EN bil – den speciella bilen. Inte flera bilar.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord pratar om fler än en häst?',options:['häst','hästen','hästar','hästarna'],correct:'hästar'},
+      {type:'choice',question:'Här är en "wug". Nu finns det två. Det är två ___.',options:['wug','wugen','wugar','wugit'],correct:'wugar'}
+    ]
+  },
+  'f1-bestämd': {
+    level:'F1', targetPattern:'Bestämd form singular',
+    teacherDescription:'Elever identifierar bestämd form singularis (den/det + substantiv → substantiv + en/et).',
+    studentInstruction:'Klicka på orden som menar EN SPECIELL sak – som om du pekar på just den!',
+    targetWords:['bilen','hunden','katten','stolen','bordet','huset','fågeln','boken'],
+    distractorWords:['bilar','hundar','katter','stolar','fåglar','böcker','bilarna','hundarna','katterna','stolarna','fåglarna','böckerna','husen','barnen','bil','hund','katt','stol','bord','hus','fågel','bok','dag','sol','lampa','dörr'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'De här orden slutar på -en eller -et. Det visar att vi pratar om EN SPECIELL sak – inte vilken som helst, utan just den där!',
+    contrastExample:{word:'bilar',reason:'"Bilar" är flera bilar. "Bilen" är en speciell bil som vi menar.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord menar EN speciell katt – just den katten?',options:['katt','katter','katten','katterna'],correct:'katten'}
+    ]
+  },
+
+  // ── 2–3 ──────────────────────────────────
+  '23-preteritum': {
+    level:'23', targetPattern:'Preteritum -ade (grupp 1 verb)',
+    teacherDescription:'Elever identifierar grupp 1-verb i preteritum (ändelse -ade). Blindord: presens av samma verb + starka verb i preteritum.',
+    studentInstruction:'Hitta alla ord som berättar om något som HÄNDE förut – i går eller förra veckan!',
+    targetWords:['hoppade','sparkade','pratade','skrattade','städade','tittade','lyssnade','cyklade','målade','lagade','startade','tävlade'],
+    distractorWords:['hoppar','sparkar','pratar','skrattar','städar','tittar','lyssnar','cyklar','målar','lagar','hoppat','pratat','skrattat','städat','tittat','lyssnat','sprang','gick','åt','drack','sjöng','tog','kom','stod','läste','körde','ringde','sålde'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','lookalike','lookalike','lookalike','lookalike'],
+    explanation:'Alla dessa ord slutar på -ade. Den ändelsen visar att det hände FÖRUT – i går, i förra veckan. "Hoppade" = hoppade igår. Ändelsen -ar däremot visar nu.',
+    contrastExample:{word:'hoppar',reason:'"Hoppar" händer nu – presens. Ändelsen är -ar. "Hoppade" hände förut – preteritum. Ändelsen är -ade.'},
+    transferItems:[
+      {type:'choice',question:'Kalle ___ med sin cykel i går.',options:['cyklar','cyklade','cykel','cyklat'],correct:'cyklade'},
+      {type:'choice',question:'Vilket ord berättar om något som HÄNDE förut?',options:['pratar','pratade','prat','pratas'],correct:'pratade'}
+    ]
+  },
+  '23-presens': {
+    level:'23', targetPattern:'Presens -ar (grupp 1 verb)',
+    teacherDescription:'Elever identifierar grupp 1-verb i presens (ändelse -ar). Blindord: preteritum av samma verb + infinitiv.',
+    studentInstruction:'Hitta alla ord som berättar om något som händer NU – just idag!',
+    targetWords:['hoppar','cyklar','pratar','skrattar','städar','lyssnar','dansar','klättrar','simmar','springer','läser','sjunger'],
+    distractorWords:['hoppade','cyklade','pratade','skrattade','spelade','tittade','dansade','simmade','hoppat','pratat','dansat','simmat','äter','dricker','flyger','biter','hoppa','cykla','prata','simma','dansa','springa','sprang','gick','åt','drack','sjöng','stod'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Dessa ord slutar på -ar. Den ändelsen visar att det händer NU. "Hoppar" = hoppar just nu. Jämför: hoppar (nu) – hoppade (igår).',
+    contrastExample:{word:'hoppade',reason:'"Hoppade" hände förut – preteritum. Ändelsen är -ade. "Hoppar" händer nu – presens.'},
+    transferItems:[
+      {type:'choice',question:'Maja ___ hem från skolan varje dag.',options:['sprang','gick','gick','cyklar'],correct:'cyklar'},
+      {type:'choice',question:'Vilket ord berättar om något som händer NU?',options:['hoppade','hoppa','hoppar','hoppat'],correct:'hoppar'}
+    ]
+  },
+  '23-komparativ': {
+    level:'23', targetPattern:'Komparativ -are',
+    teacherDescription:'Elever identifierar adjektiv i komparativ form (-are). Luriga blindord: personsuffix -are (lärare, bagare).',
+    studentInstruction:'Hitta alla ord som jämför och säger att något är MER av något – som snabbare = mer snabb!',
+    targetWords:['snabbare','kallare','gladare','vackrare','starkare','mörkare','godare','finare','tröttare','roligare','lättare','svårare'],
+    distractorWords:['lärare','bagare','spelare','fiskare','snickare','målare','förare','byggare','tränare','köpare','säljare','sångare','dansare','simmare','snabbast','gladast','kallast','finast','starkast','mörkast','kall','snabb','glad','vacker','stark','mörk','ung','gammal'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Dessa ord slutar på -are och visar JÄMFÖRELSE – att något är mer av en egenskap. Snabb → snabbare (mer snabb). Kall → kallare (mer kall).',
+    contrastExample:{word:'lärare',reason:'"Lärare" slutar på -are men är ett YRKE – en person som undervisar. Inte en jämförelse!'},
+    transferItems:[
+      {type:'choice',question:'Bilen är ___ än cykeln.',options:['snabb','snabbare','snabbast','snabbaste'],correct:'snabbare'},
+      {type:'choice',question:'Vilket ord visar JÄMFÖRELSE?',options:['lärare','spelare','kallare','bagare'],correct:'kallare'}
+    ]
+  },
+
+  // ── 4–6 ──────────────────────────────────
+  '46-person-are': {
+    level:'46', targetPattern:'Personsuffix -are (yrkesord och roller)',
+    teacherDescription:'Elever identifierar substantiv med suffixet -are = "en som utför handling". Luriga blindord: komparativ -are (snabbare, kallare).',
+    studentInstruction:'Hitta alla ord som betyder EN PERSON SOM GÖR NÅGOT – ett yrke eller en roll!',
+    targetWords:['lärare','bagare','målare','fiskare','snickare','förare','byggare','tränare','köpare','säljare','skrivare','dansare','sångare','simmare','spelare','arbetare'],
+    distractorWords:['snabbare','kallare','gladare','starkare','mörkare','finare','tröttare','roligare','lättare','svårare','längre','bättre','sämre','yngre','djupare','bredare','hårdare','mjukare','tunnare','rikare','fattigare','viktigare','klass','handel','yrke','arbete','musik','sport','person','människa','individ','folk'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Dessa ord slutar på -are och betyder EN PERSON SOM UTFÖR NÅGOT. Lär → lärare. Bygg → byggare. Kör → förare. Suffixet -are kan alltså bilda yrkes- och rollord.',
+    contrastExample:{word:'snabbare',reason:'"Snabbare" slutar på -are men är en JÄMFÖRELSE – "mer snabb". Inte en person! Samma suffix, helt olika funktion.'},
+    transferItems:[
+      {type:'fill',question:'En person som målar heter en ___.',correct:'målare',hint:'Måla → ?'},
+      {type:'choice',question:'Vilket ord betyder "en person som fiskar"?',options:['fisk','fiskar','fiskade','fiskare'],correct:'fiskare'},
+      {type:'rule',question:'Vad betyder suffixet -are i dessa ord?',options:['En jämförelse (mer av något)','En person som utför en handling','Bestämd form av ett substantiv'],correct:'En person som utför en handling'}
+    ]
+  },
+  '46-negation-o': {
+    level:'46', targetPattern:'Negationsprefix o-',
+    teacherDescription:'Elever identifierar adjektiv med negationsprefixet o- (= icke-, mot-). Luriga blindord: ord som börjar på o utan att ha o- som prefix.',
+    studentInstruction:'Hitta alla ord där o- i BÖRJAN gör ordet till det MOTSATTA av sin grundbetydelse!',
+    targetWords:['olycklig','okänd','ovanlig','otrolig','onormal','ofarlig','osäker','ovänlig','oärlig','olämplig','obehaglig','orimlig','oansvarig','oerfaren','ofrivillig','obegriplig'],
+    distractorWords:['orange','organ','objekt','oktober','ombud','orm','ord','ort','oliv','oval','opera','omedelbar','oxe','ocean','onkel','omgång','omsorg','ömsesidig','lycklig','farlig','säker','möjlig','vanlig','trevlig','snäll','normal','behaglig','rimlig','ansvarig','erfaren','frivillig','begriplig'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic'],
+    explanation:'Prefixet o- läggs FRAMFÖR stammen och vänder på betydelsen. Farlig → ofarlig (inte farlig). Känd → okänd (inte känd). Det är en produktiv orddel – man kan bilda nya ord med den!',
+    contrastExample:{word:'orange',reason:'"Orange" börjar med o men det är INTE ett prefix. Man kan inte ta bort o och få ett känt ord. Prefixet o- fungerar bara där o- + stam = ett existerande ord.'},
+    transferItems:[
+      {type:'fill',question:'Bilen är inte säker. Bilen är ___.',correct:'osäker',hint:'o- + säker = ?'},
+      {type:'choice',question:'Vilket ord betyder "inte känd"?',options:['okänd','orange','organ','känd'],correct:'okänd'},
+      {type:'rule',question:'Vad gör prefixet o- i dessa ord?',options:['Gör ordet till plural','Vänder på ordets grundbetydelse','Gör om ett adjektiv till ett verb'],correct:'Vänder på ordets grundbetydelse'}
+    ]
+  },
+  '46-sammansättning': {
+    level:'46', targetPattern:'Sammansatta ord med förledet skol-',
+    teacherDescription:'Elever identifierar sammansättningar med "skol-" som förled. Blindord: ensamstående efterleder + "skola"/"skolad".',
+    studentInstruction:'Hitta alla sammansatta ord som börjar med SKOL– (= hör ihop med skolan)!',
+    targetWords:['skolbok','skolgård','skoldag','skolbuss','skoltid','skolarbete','skolresa','skolvecka','skolstart','skolklass','skolkamrat','skolmat','skolväska','skolledare','skolavslutning','skollov'],
+    distractorWords:['bok','gård','dag','buss','tid','arbete','resa','vecka','klass','kamrat','mat','väska','start','avslutning','lov','skola','skolan','skolor','skolad','skolning','skolgång','lärobok','klassrum','klassbok','busshållplats','bokhylla','dagstidning','lärarboken','elevarbete','sommarlov','jullov','fritids'],
+    distractorTypes:['neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic'],
+    explanation:'Alla dessa ord är SAMMANSATTA: skol- + ett annat ord. Skol-bok = bok för skolan. Skol-dag = dag i skolan. Förledet "skol-" berättar VILKET slags sak det är. Vi kan förstå okända ord om vi delar upp dem i delar!',
+    contrastExample:{word:'bok',reason:'"Bok" är bara den ena halvan. Utan "skol-" framför vet vi inte att det är en bok för skolan – det kan vara vilken bok som helst.'},
+    transferItems:[
+      {type:'fill',question:'En dag i skolan kallas en ___.',correct:'skoldag',hint:'skol- + dag = ?'},
+      {type:'choice',question:'Vilket ord är en sammansättning med skol-?',options:['skola','skolad','skolres','skolresa'],correct:'skolresa'},
+      {type:'fill',question:'Bussen som kör barn till skolan är en ___.',correct:'skolbuss',hint:'skol- + buss = ?'}
+    ]
+  },
+
+  // ── F–1 NYA ──────────────────────────────────
+  'f1-presens':{
+    level:'F1', targetPattern:'Presens – händer nu',
+    teacherDescription:'Elever identifierar verbformer i presens (ändelserna -ar/-er/-r) i kontrast mot preteritum och infinitiv.',
+    studentInstruction:'Klicka på alla ord som berättar om något som händer JUST NU!',
+    targetWords:['hoppar','springer','sjunger','äter','leker','ritar','dansar','simmar'],
+    distractorWords:['hoppade','sprang','sjöng','åt','lekte','ritade','dansade','simmade','hoppat','sjungit','ätit','lekt','dansat','simmat','hoppa','springa','sjunga','äta','leka','rita','dansa','simma','boll','dag'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Dessa ord berättar om något som händer just nu – inte igår och inte imorgon. De flesta slutar på -ar eller -er. Det kallas presens.',
+    contrastExample:{word:'hoppade',reason:'"Hoppade" berättar om något som hände igår eller förr. Presensord slutar på -ar eller -er, som "hoppar".'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord berättar om något som händer just nu?',options:['sjöng','sjunger','sjunga','sjungit'],correct:'sjunger'}
+    ]
+  },
+
+  'f1-sammansattning':{
+    level:'F1', targetPattern:'Sammansatta ord',
+    teacherDescription:'Elever identifierar sammansatta ord – ord byggda av två ord ihop.',
+    studentInstruction:'Klicka på alla ord som är gjorda av TVÅ ord ihop!',
+    targetWords:['fotboll','glasögon','tandkräm','brevlåda','snögubbe','hundkoja','julafton','solsken'],
+    distractorWords:['boll','tand','brev','snö','hund','fot','jul','sol','katt','blomma','dag','is','eld','sten','fönster','skola','lampa','trappa','dörr','golv','matta','soffa','dator','penna'],
+    distractorTypes:['neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Fotboll = fot + boll. Snögubbe = snö + gubbe. Dessa ord är gjorda av två ord som satts ihop. Det kallas sammansatta ord!',
+    contrastExample:{word:'boll',reason:'"Boll" är bara ett enstaka ord. Men "fotboll" är fot + boll – det är ett sammansatt ord.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord är gjort av två ord ihop?',options:['katt','boll','skolbok','dag'],correct:'skolbok'}
+    ]
+  },
+
+  // ── 2–3 NYA ──────────────────────────────────
+  '23-bestämd-plural':{
+    level:'23', targetPattern:'Bestämd form plural',
+    teacherDescription:'Elever identifierar bestämd form plural (ändelserna -arna, -erna, -orna, -na, -en) och skiljer den från obestämd plural och bestämd singular.',
+    studentInstruction:'Hitta alla ord som berättar om FLERA bestämda saker – t.ex. "bilarna" och "husen"!',
+    targetWords:['bilarna','hundarna','katterna','böckerna','husen','barnen','blommorna','äpplena','stolarna','träden','fåglarna','glasen'],
+    distractorWords:['bilar','hundar','katter','böcker','barn','blommor','fåglar','glas','bilen','hunden','katten','boken','huset','barnet','blomman','trädet','bilens','hundens','kattens','bokens','husets','barnets','cykel','lampa','dag','natt','sol','måne'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Bestämd form plural visar att vi pratar om just DESSA saker. Ändelserna -arna, -erna, -na och -en visar bestämd form plural. "Bilar" = flera bilar (okänt vilka). "Bilarna" = just dessa bilar.',
+    contrastExample:{word:'bilar',reason:'"Bilar" är plural (flera) men OBESTÄMD – vi vet inte vilka. "Bilarna" visar att det är bestämd form: just dessa bilar vi pratar om.'},
+    transferItems:[
+      {type:'fill',question:'Jag såg ___ i skogen. (bestämd plural av träd)',correct:'träden',hint:'träd + -en = träden'},
+      {type:'choice',question:'Vilken form är bestämd form plural av "katt"?',options:['katten','katter','katterna','kattens'],correct:'katterna'}
+    ]
+  },
+
+  '23-starka-verb':{
+    level:'23', targetPattern:'Starka verb – oregelbundet preteritum',
+    teacherDescription:'Elever identifierar preteritumformer av starka verb (vokalomljud i stället för ändelse) och skiljer dem från svaga verbs -ade/-de.',
+    studentInstruction:'Hitta ord som berättar om något som HÄNDE – men på ett knepigt sätt, utan -ade eller -de i slutet!',
+    targetWords:['gick','tog','såg','kom','sprang','åt','drack','sjöng','satt','låg','stod','flög'],
+    distractorWords:['går','tar','ser','kommer','springer','äter','dricker','sjunger','sitter','ligger','står','flyger','gått','tagit','sett','kommit','sprungit','ätit','druckit','sjungit','hoppade','tittade','spelade','pratade','läste','körde','sålde','ringde'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','lookalike','lookalike','lookalike','lookalike'],
+    explanation:'Starka verb byter vokal i stället för att lägga till -ade: gå→gick, ta→tog, springa→sprang, äta→åt. Det är oregelbundna former som man behöver lära sig utantill.',
+    contrastExample:{word:'hoppade',reason:'"Hoppade" är också dåtid – men det är ett svagt verb med ändelsen -ade. Vi letade efter starka verb som byter vokal: gick, tog, sprang...'},
+    transferItems:[
+      {type:'choice',question:'Vad är preteritum (igårform) av "skriva"?',options:['skrivade','skrivde','skrev','skrivit'],correct:'skrev'},
+      {type:'fill',question:'Igår ___ vi hela vägen till skolan. (springa)',correct:'sprang',hint:'springa → sprang'},
+      {type:'choice',question:'Wug-test: "Hon gillade att binda snören. Igår ___ hon ett snöre." Välj rätt form.',options:['bindade','bindde','band','bindat'],correct:'band'}
+    ]
+  },
+
+  '23-prefix-o':{
+    level:'23', targetPattern:'Prefix o– (negation)',
+    teacherDescription:'Elever identifierar adjektiv med negationsprefixet o- och förstår att det ger ordets motsats. Distraktorerna inkluderar ord som börjar med o men inte använder prefixet.',
+    studentInstruction:'Hitta alla ord där o- i början gör ordet till en MOTSATS!',
+    targetWords:['olycklig','omöjlig','ofarlig','otrevlig','oviktig','osäker','oskyldig','okänd','oärlig','ovanlig','obekant','ofrivillig'],
+    distractorWords:['orm','ord','ort','ofta','och','oliv','opera','oval','ocean','orange','onkel','omgång','omsorg','omedelbar','ombud','lycklig','möjlig','farlig','trevlig','viktig','säker','skyldig','känd','ärlig','snabb','glad','trött','stor'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','neutral','neutral','neutral','neutral'],
+    explanation:'Prefixet o- sätts framför adjektiv och ger ordets motsats: lycklig → olycklig (inte lycklig), möjlig → omöjlig (inte möjligt). o- fungerar bäst med adjektiv på -ig och -lig.',
+    contrastExample:{word:'orm',reason:'"Orm" börjar med "o" men det är INTE prefixet o-. "Orm" är ett eget ord (ett djur). Prefixet o- sätts framför ett befintligt ord för att vända dess innebörd.'},
+    transferItems:[
+      {type:'fill',question:'En person som inte är skyldig är ___skyldig.',correct:'oskyldig',hint:'o- + skyldig = ?'},
+      {type:'choice',question:'Vilket ord använder prefixet o- på rätt sätt?',options:['ogod','osnabb','okall','olycklig'],correct:'olycklig'}
+    ]
+  },
+
+  '23-prefix-miss':{
+    level:'23', targetPattern:'Prefix miss– (fel/bort)',
+    teacherDescription:'Elever identifierar ord med prefixet miss-, som betyder att något görs fel eller på fel sätt.',
+    studentInstruction:'Hitta alla ord där miss- i början visar att något görs FEL eller på fel sätt!',
+    targetWords:['misslyckas','missförstå','missnöjd','misshandla','misstro','missbruka','missvisande','missräkna','missköta','misstänka','missbedöma','misstolka'],
+    distractorWords:['mission','missil','missionär','missa','misteln','mist','Mississippi','förvirrad','lyckas','förstå','nöjd','handlar','räknar','sköter','tänker','litar','tolkar','bedömer','bra','korrekt','rätt','noggrann','välgjord','perfekt','lyckad','framgångsrik','tydlig','klar'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','semantic','semantic','semantic','semantic'],
+    explanation:'Prefixet miss- visar att något görs fel eller inte som det borde: förstå → missförstå (förstå fel), lyckas → misslyckas (lyckas inte). OBS: "mission" och "missil" börjar med "miss" men har INTE prefixet miss-.',
+    contrastExample:{word:'mission',reason:'"Mission" börjar med "miss" men det är inte prefixet miss- – det är ett låneord från latinet. Jämför: mis(s)+ förstå = missförstå (prefix + verb).'},
+    transferItems:[
+      {type:'fill',question:'Om du räknar fel har du ___räknat.',correct:'missräknat',hint:'miss- + räknat = ?'},
+      {type:'choice',question:'Vilket ord använder prefixet miss- på rätt sätt?',options:['mission','missil','missförstå','missa'],correct:'missförstå'}
+    ]
+  },
+
+  // ── 4–6 NYA ──────────────────────────────────
+  '46-superlativ':{
+    level:'46', targetPattern:'Superlativ (–ast/–st)',
+    teacherDescription:'Elever identifierar superlativformer och skiljer dem från komparativ (-are/-re) och positiv.',
+    studentInstruction:'Hitta alla ord i superlativ – orden som visar DET ALLRA MEST av något!',
+    targetWords:['snabbast','gladast','tröttast','finast','störst','längst','bäst','sämst','yngst','äldst','minst','roligast','starkast','mörkast','vackrast','lättast'],
+    distractorWords:['snabbare','gladare','tröttare','finare','större','längre','bättre','sämre','starkare','mörkare','vackrare','lättare','djupare','bredare','hårdare','mjukare','tunnare','rikare','fattigare','viktigare','snabb','glad','trött','fin','stark','mörk','djup','bred','hårt','mjuk','tung','enkel'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Superlativ används när något är ALLRA mest: "snabbast" = allra snabbast. Komparativ (-are/-re) jämför bara två saker: "snabbare" = mer snabb än något annat. Superlativ = toppen av alla jämförelser.',
+    contrastExample:{word:'snabbare',reason:'"Snabbare" är komparativ – det jämför: "Leo är snabbare än Mia." Superlativ "snabbast" betyder att absolut ingen är snabbare.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord är superlativ?',options:['snabb','snabbare','snabbast','snabbhet'],correct:'snabbast'},
+      {type:'fill',question:'Av alla elever sprang Mia ___ (snabb → superlativ).',correct:'snabbast',hint:'snabb → snabbare → ?'},
+      {type:'rule',question:'Vad är skillnaden mellan komparativ och superlativ?',options:['Ingen skillnad – de är samma form','Komparativ jämför två, superlativ visar det allra mest','Superlativ jämför två, komparativ visar det allra mest'],correct:'Komparativ jämför två, superlativ visar det allra mest'}
+    ]
+  },
+
+  '46-prefix-be':{
+    level:'46', targetPattern:'Prefix be–',
+    teacherDescription:'Elever identifierar verb med prefixet be-, som ger verbet ny eller förstärkt innebörd och ofta gör det transitivt.',
+    studentInstruction:'Hitta alla verb där be- i början är ett PREFIX som ger ordet ny betydelse!',
+    targetWords:['bearbeta','bedöma','befria','behandla','belysa','beräkna','besvara','betrakta','bevisa','bekämpa','beskriva','begränsa','bereda','betona','bevara','besöka'],
+    distractorWords:['arbeta','döma','frihet','handla','lysa','räkna','svara','titta','kämpa','skriva','gräns','tona','vara','söka','berg','bete','bett','bengel','beige','ben','betong','bensin','bebis','bergig','klass','sport','tala','gå','komma','hjälpa','dela','öppna'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Prefixet be- fogas framför verb och ger dem ny innebörd: "svara" = svara. "Besvara" = svara på (med ett tydligt objekt). be- gör ofta verbet transitivt – det tar ett objekt.',
+    contrastExample:{word:'berg',reason:'"Berg" börjar med "be" men det är INTE prefixet be- – "berg" är ett eget ord (en klippa). Jämför: "besvara" = be- + svara (prefix framför ett verb).'},
+    transferItems:[
+      {type:'fill',question:'Domaren ska ___ beviserna noggrant. (be- + döma)',correct:'bedöma',hint:'be- + döma = ?'},
+      {type:'choice',question:'Vilket verb innehåller prefixet be-?',options:['besvara','svara','svar','svarade'],correct:'besvara'},
+      {type:'rule',question:'Vad gör prefixet be- med ett verb?',options:['Det negerar verbets betydelse, som o-','Det ger verbet ny eller förstärkt innebörd','Det gör verbet till ett adjektiv'],correct:'Det ger verbet ny eller förstärkt innebörd'}
+    ]
+  },
+
+  '46-prefix-for':{
+    level:'46', targetPattern:'Prefix för–',
+    teacherDescription:'Elever identifierar ord med prefixet för- och förstår att det kan ge innebörd av "framåt", "bort", "fel" eller förstärkning.',
+    studentInstruction:'Hitta alla ord där för- i början är ett PREFIX – inte en del av ett eget ord!',
+    targetWords:['förbereda','förbjuda','förklara','förbättra','försämra','förhindra','förändra','försena','förvänta','försvinna','förstå','förbise','förse','förlora','förena','förnya'],
+    distractorWords:['bereda','bjuda','klara','hindra','ändra','vänta','förr','förut','förra','förrän','förbi','förutom','förste','förord','förledd','förfader','frukost','fönster','frisk','fri','frossa','fröjd','forma','arbeta','tänka','göra','hjälpa','öppna','stänga','börja','sluta','dela'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Prefixet för- ger ord som "framåt/i förväg" (förbereda), "bort/fel" (försvinna, förbise) eller förstärkning (förstå). OBS: "förra", "frukost" och "fönster" börjar med "för" i uttal men är INTE ord med prefixet för-.',
+    contrastExample:{word:'frukost',reason:'"Frukost" börjar med ett "för"-liknande ljud men är ett eget ord – det är inte prefixet för- framför ett basord. Jämför: för- + klara = förklara (prefix + verb).'},
+    transferItems:[
+      {type:'fill',question:'Läraren ska ___ vad morfologi innebär. (för- + klara)',correct:'förklara',hint:'för- + klara = ?'},
+      {type:'choice',question:'Vilket ord innehåller prefixet för- på rätt sätt?',options:['förra','frukost','försena','förrän'],correct:'försena'},
+      {type:'rule',question:'Vilket påstående stämmer om prefixet för-?',options:['Det har alltid samma innebörd som o-','Det kan ge ord innebörd av "framåt", "bort" eller förstärkning','Alla ord som börjar med för- har prefixet för-'],correct:'Det kan ge ord innebörd av "framåt", "bort" eller förstärkning'}
+    ]
+  },
+
+  '46-suffix-het':{
+    level:'46', targetPattern:'Suffix –het (abstrakta substantiv)',
+    teacherDescription:'Elever identifierar substantiv bildade med suffixet -het från adjektiv och förstår hur adjektiv omvandlas till abstrakta begrepp.',
+    studentInstruction:'Hitta alla ord där -het har skapat ett nytt SUBSTANTIV av ett adjektiv – ett abstrakt begrepp!',
+    targetWords:['frihet','snabbhet','godhet','skönhet','ärlighet','säkerhet','möjlighet','svårighet','trohet','vänlighet','ensamhet','öppenhet','klokhet','nyfikenhet','trygghet','rörlighet'],
+    distractorWords:['fri','snabb','god','skön','ärlig','säker','möjlig','svår','trogen','vänlig','ensam','öppen','klok','nyfiken','trygg','rörlig','vänskap','kamratskap','ägarskap','medborgarskap','vetenskap','kunskap','glädje','lycka','kärlek','sorg','tro','hopp','mod','kraft','vila','frid'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','neutral','neutral','neutral','neutral'],
+    explanation:'Suffixet -het fogas till adjektiv och skapar abstrakta substantiv: fri → frihet (egenskapen att vara fri). Stavningsregel: adjektiv på -ig får -ighet: ärlig → ärlighet, möjlig → möjlighet.',
+    contrastExample:{word:'fri',reason:'"Fri" är ett adjektiv – det beskriver: "ett fritt djur". "Frihet" med -het är ett substantiv – det är BEGREPPET frihet man kan kämpa för eller sakna.'},
+    transferItems:[
+      {type:'fill',question:'Egenskapen att vara vänlig kallas ___ (vänlig + -het).',correct:'vänlighet',hint:'Tänk på stavningen: -ig + het = -ighet'},
+      {type:'fill',question:'Egenskapen att vara ensam kallas ___.',correct:'ensamhet',hint:'ensam + -het = ?'},
+      {type:'choice',question:'Vilket ord är ett substantiv bildat med suffixet -het?',options:['snabb','snabbare','snabbaste','snabbhet'],correct:'snabbhet'}
+    ]
+  },
+
+  '46-suffix-ig':{
+    level:'46', targetPattern:'Suffix –ig / –lig (egenskapsord)',
+    teacherDescription:'Elever identifierar adjektiv bildade med suffixet -ig eller -lig och förstår att de skapas av substantiv eller verb.',
+    studentInstruction:'Hitta alla egenskapsord (adjektiv) som är bildade med suffixet –ig eller –lig!',
+    targetWords:['modig','lycklig','smutsig','regnig','sandig','vänlig','farlig','rolig','trolig','frivillig','händig','krånglig','lustig','konstig','märklig','underlig'],
+    distractorWords:['mod','lycka','smuts','regn','sand','vän','fara','lust','konst','märke','hand','krångel','sorg','sol','snö','blomma','talangfull','händelserik','framgångsrik','slagkraft','energirik','innehållsrik','snabb','kall','stor','liten','varm','ren','tom','fri','glad','trött'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Suffixet -ig och -lig fogas till substantiv och skapar adjektiv: mod → modig, lycka → lycklig, fara → farlig. Dessa ord beskriver en EGENSKAP hos något eller någon.',
+    contrastExample:{word:'mod',reason:'"Mod" är ett substantiv – man kan ha mod. "Modig" med suffixet -ig är ett adjektiv som beskriver en person: "en modig person". Suffixet -ig skapar ett egenskapsord.'},
+    transferItems:[
+      {type:'fill',question:'En person som har mod är ___ (mod + -ig).',correct:'modig',hint:'mod + -ig = ?'},
+      {type:'fill',question:'En dag med mycket regn är en ___ dag.',correct:'regnig',hint:'regn + -ig = ?'},
+      {type:'choice',question:'Vilket suffix gör substantivet "lycka" till ett adjektiv?',options:['-het','-lig','-lös','-ande'],correct:'-lig'}
+    ]
+  },
+
+  '46-suffix-los':{
+    level:'46', targetPattern:'Suffix –lös (utan något)',
+    teacherDescription:'Elever identifierar adjektiv med suffixet -lös (= utan X) och skiljer dem från o- (prefix) och neutrala ord.',
+    studentInstruction:'Hitta alla ord som betyder att något SAKNAS – ord som slutar på –lös!',
+    targetWords:['hjälplös','hopplös','meningslös','tanklös','ansvarslös','lönlös','ändlös','gränslös','känslolös','kraftlös','nådelös','modlös','rättslös','energilös','drivlös','skrupellös'],
+    distractorWords:['hjälp','hopp','mening','tanke','ansvar','lön','ände','gräns','känsla','kraft','nåd','mod','rätt','energi','drift','skrupel','skam','skuld','vett','vilja','ofarlig','omöjlig','otrevlig','onödig','ofri','oärlig','smärtfri','avgiftsfri','sockerfri','problemfri','fridfull','sorgsen'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','neutral','neutral'],
+    explanation:'Suffixet -lös fogas till ett SUBSTANTIV och betyder "utan det som basordet säger": hopp → hopplös (utan hopp), hjälp → hjälplös (utan hjälp). Jämför med o- som sätts framför ADJEKTIV.',
+    contrastExample:{word:'ofarlig',reason:'"Ofarlig" använder prefixet o- framför adjektivet "farlig". Men -lös sätts EFTER ett substantiv: hjälplös = hjälp + -lös. Olika regler – o- + adjektiv, substantiv + -lös.'},
+    transferItems:[
+      {type:'fill',question:'En person utan hopp är ___ (hopp + -lös).',correct:'hopplös',hint:'hopp + -lös = ?'},
+      {type:'fill',question:'En situation utan mening är ___ (mening + -lös).',correct:'meningslös',hint:'mening + -lös = ?'},
+      {type:'rule',question:'Vad är skillnaden mellan prefixet o- och suffixet -lös?',options:['Ingen skillnad – de kan alltid bytas ut mot varandra','o- sätts framför adjektiv; -lös sätts efter substantiv','o- är mer formellt; -lös är mer vardagligt'],correct:'o- sätts framför adjektiv; -lös sätts efter substantiv'}
+    ]
+  },
+
+  '46-ordfamiljer':{
+    level:'46', targetPattern:'Ordfamilj – roten lär–',
+    teacherDescription:'Elever identifierar ord som morfologiskt tillhör ordfamiljen kring roten "lär" (lära) och skiljer dem från ord med liknande ljud men annan rot.',
+    studentInstruction:'Hitta alla ord som verkligen hör ihop med roten "lär" – som har ett morfologiskt samband!',
+    targetWords:['lärare','lärdom','lärling','lärobok','inlärning','lärorik','läromedel','lärokurs','läroanstalt','läroplan','lärarutbildning','vällärd','lärjunge','lärcentrum'],
+    distractorWords:['läsare','läsning','läslust','läsförståelse','läsåret','läskunnig','läkare','läker','läkte','läkemedel','lägg','lämna','länga','läppar','lätt','lättad','läckra','läxa','lättja','studerande','elev','skola','bildning','pedagogik','kurs','utbildning','kunskap','program','lektion','undervisning','klassrum','rektor'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic'],
+    explanation:'Ordfamiljen kring "lär" (= att lära sig/undervisa) innehåller: lärare, lärdom, lärling, lärobok... Ord som "läsare" (från läsa) och "läkare" (från läka = hela) verkar lika men har ANNAN rot.',
+    contrastExample:{word:'läsare',reason:'"Läsare" är bildat av roten "läs-" (från läsa = to read) – inte "lär-" (to learn/teach). Orden ser lika ut men är morfologiskt skilda ordfamiljer.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord tillhör INTE ordfamiljen kring "lär"?',options:['lärling','lärobok','läkare','inlärning'],correct:'läkare'},
+      {type:'fill',question:'En bok man lär sig ur kallas en ___ (lär + o + bok).',correct:'lärobok',hint:'lär- + o + bok = ?'},
+      {type:'rule',question:'Vad är en ordfamilj?',options:['Ord som rimmar med varandra','Ord som delar samma morfologiska rot och har besläktad betydelse','Ord som börjar med samma bokstav'],correct:'Ord som delar samma morfologiska rot och har besläktad betydelse'}
+    ]
+  },
+
+  // ── 2–3 NYA ÖVNINGSTYPER ──────────────────────────────
+  '23-perfekt':{
+    level:'23', targetPattern:'Perfekt – supinum på -at',
+    teacherDescription:'Elever identifierar supinumformer på -at (grupp 1-verb) och skiljer dem från preteritum -ade och starka verbs supinum.',
+    studentInstruction:'Hitta alla ord som kan kombineras med "har" och slutar på –at – som "har hoppat"!',
+    targetWords:['hoppat','spelat','pratat','cyklat','dansat','simmat','tittat','lyssnat','målat','startat'],
+    distractorWords:['hoppade','spelade','pratade','cyklade','dansade','simmade','tittade','lyssnade','målade','startade','gått','kommit','sett','tagit','sprungit','skrivit','sjungit','druckit','hoppar','spelar','pratar','cyklar','hoppa','spela','prata','simma'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Supinum på -at bildas av grupp 1-verb och används alltid med "har": "Jag har hoppat." Ändelsen -at är en speciell verbform som bara existerar i perfekt – aldrig ensam.',
+    contrastExample:{word:'hoppade',reason:'"Hoppade" är preteritum – berättar om igår: "jag hoppade igår". Supinum "hoppat" kräver "har": "jag har hoppat" (någon gång). Två olika former, två olika tidsperspektiv.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord är supinum (passar med "har")?',options:['hoppar','hoppade','hoppat','hoppa'],correct:'hoppat'},
+      {type:'fill',question:'Vi ___ aldrig simmat i det havet. (perfekt av simma)',correct:'simmat',hint:'simma → simmade → ?'}
+    ]
+  },
+
+  '23-imperativ':{
+    level:'23', targetPattern:'Imperativ (uppmaningsform)',
+    teacherDescription:'Elever identifierar imperativformer av starka och svaga verb och skiljer dem från presens och infinitiv.',
+    studentInstruction:'Hitta alla ord som är UPPMANINGAR – ord som säger åt någon att göra något!',
+    targetWords:['spring','skriv','läs','sjung','sitt','ät','drick','flyg','bit','frys','ligg','kom'],
+    distractorWords:['springer','skriver','läser','sjunger','sitter','äter','dricker','flyger','biter','fryser','ligger','kommer','springa','skriva','läsa','sjunga','sitta','äta','dricka','flyga','bita','frysa','ligga','komma','sprang','skrev','läste','sjöng','satt','åt','drack','flög'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Imperativ är uppmaningsformen – den form vi använder när vi säger åt någon att göra något: "Spring! Skriv! Ät!" Den bildas av verbets stam utan ändelse.',
+    contrastExample:{word:'springer',reason:'"springer" är presens – beskriver att någon springer just nu. "Spring!" är imperativ – det är en uppmaning. Presens och imperativ av starka verb ser ofta väldigt olika ut.'},
+    transferItems:[
+      {type:'choice',question:'Vilken form är imperativ av "äta"?',options:['äter','åt','ät','äta'],correct:'ät'},
+      {type:'fill',question:'Säg åt hunden att sitta: "___ !" (sitta → imperativ)',correct:'sitt',hint:'sitta → imperativ = verbstammen'}
+    ]
+  },
+
+  // ── 4–6 NYA ÖVNINGSTYPER ──────────────────────────────
+  '46-prefix-sam':{
+    level:'46', targetPattern:'Prefix sam– (tillsammans, gemensamt)',
+    teacherDescription:'Elever identifierar ord med prefixet sam-, som ger innebörd av att göra något gemensamt eller tillsammans.',
+    studentInstruction:'Hitta alla ord där sam– ger tanken om ATT GÖRA NÅGOT TILLSAMMANS eller GEMENSAMT!',
+    targetWords:['samarbeta','samla','samtala','sammansätta','samliv','samhälle','sammanfatta','samordna','samverka','samspel','samband','samklang','samvaro','samling','samråd','sammanhang'],
+    distractorWords:['sammet','samisk','samba','arbeta','tala','sätta','leva','fatta','ordna','verka','spel','band','varo','klang','bearbeta','förena','förbinda','integrera','koppla','länka','klass','lag','grupp','team','röst','glad','sol','dag'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Prefixet sam- ger ord en innebörd av att göra något gemensamt: arbeta → samarbeta (arbeta ihop), tala → samtala (tala med varandra). sam- är ett av de tydligaste och mest produktiva prefixen i svenska.',
+    contrastExample:{word:'sammet',reason:'"Sammet" (ett mjukt tyg) börjar med "sam" men det är INTE prefixet sam-. Jämför: "sam-arbeta" = prefix+verb. "sammet" är ett eget ord utan att sam- tillförs något basord.'},
+    transferItems:[
+      {type:'fill',question:'Att arbeta ihop med andra kallas att ___ (sam- + arbeta).',correct:'samarbeta',hint:'sam- + arbeta = ?'},
+      {type:'choice',question:'Vilket ord innehåller prefixet sam- med rätt innebörd?',options:['sammet','samba','samtal','Samsung'],correct:'samtal'},
+      {type:'rule',question:'Vad tillför prefixet sam- till ett ords innebörd?',options:['Det negerar ordets grundbetydelse','Det ger innebörd av att göra något gemensamt eller tillsammans','Det visar att något sker upprepade gånger'],correct:'Det ger innebörd av att göra något gemensamt eller tillsammans'}
+    ]
+  },
+
+  '46-prefix-over':{
+    level:'46', targetPattern:'Prefix över– (ovan, bortom, för mycket)',
+    teacherDescription:'Elever identifierar ord med prefixet över- och förstår att det kan ge innebörd av position (ovanpå), överskridande (bortom) eller överdrift (för mycket).',
+    studentInstruction:'Hitta alla ord där över– ger tanken om ATT KOMMA OVANPÅ, BORTOM eller HA FÖR MYCKET!',
+    targetWords:['övervaka','överleva','överdriva','övertala','övervinna','överskatta','överbetala','övervikt','överskott','övertid','överta','överraska','överge','överlägsen','överbegåvad','överväldigas'],
+    distractorWords:['undervisa','undersöka','underskatta','underhålla','underordnad','understryka','samarbeta','samordna','sammanhang','vaka','leva','driva','tala','vinna','skatta','betala','tid','ta','ge','glad','snabb','klass','dag','sol','år','stor','lång'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Prefixet över- kan ge tre typer av innebörd: position (övervaka = vakta uppifrån), överskridande (överleva = leva bortom döden) och överdrift (överdriva, överbetala = göra för mycket). Jämför med under- som ger motsatta nyanser.',
+    contrastExample:{word:'undervisa',reason:'"undervisa" har prefixet under- – motsatsen till över-. Notera skillnaden: "överskatta" (värdera för högt) vs "underskatta" (värdera för lågt). Prefixen är varandras morfologiska motpoler.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord innehåller prefixet över-?',options:['undervisa','övervaka','omhänderta','bearbeta'],correct:'övervaka'},
+      {type:'fill',question:'Att betala mer än nödvändigt kallas att ___ (över- + betala).',correct:'överbetala',hint:'över- + betala = ?'},
+      {type:'rule',question:'Vilken innebörd kan prefixet över- ge?',options:['Alltid negation (som o-)','Position ovanpå, bortom eller för mycket av något','Att göra något gemensamt (som sam-)'],correct:'Position ovanpå, bortom eller för mycket av något'}
+    ]
+  },
+
+  '46-prefix-under':{
+    level:'46', targetPattern:'Prefix under– (under, grundläggande, för lite)',
+    teacherDescription:'Elever identifierar ord med prefixet under- och förstår att det kan ge innebörd av position (nedanför), grundläggande handling eller för lite.',
+    studentInstruction:'Hitta alla ord där under– ger tanken om ATT LIGGA UNDER, ATT UNDERVISA ELLER ATT HA FÖR LITE!',
+    targetWords:['undervisa','undersöka','underlätta','underskatta','underhålla','underordnad','understödja','understryka','underminera','underlägsen','undervisning','underhållning','underkänna','underdriva','underutnyttja','underfinansierad'],
+    distractorWords:['övervaka','överleva','överdriva','överskatta','överbetala','övervikt','samarbeta','samordna','sammanhang','visa','söka','lätta','skatta','hålla','ordna','stödja','stryka','minera','ovan','nedre','lägre','grund','djup','klass','nere','låg'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Prefixet under- ger tre typer av innebörd: position (underordnad = placerad under), grundläggande handling (undervisa, undersöka) och för lite (underskatta, underdriva). Jämför alltid med över- – de är varandras motpoler.',
+    contrastExample:{word:'övervaka',reason:'"övervaka" har prefixet över- (bevaka uppifrån). "undervisa" har prefixet under- (leda lärande). Prefixen över- och under- är morfologiska motpoler – men de kan INTE alltid bytas ut mot varandra.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord innehåller prefixet under-?',options:['övervaka','omhänderta','undervisa','bearbeta'],correct:'undervisa'},
+      {type:'fill',question:'Att värdera något för lågt kallas att ___ det. (under- + skatta)',correct:'underskatta',hint:'under- + skatta = ?'},
+      {type:'rule',question:'Vad är relationen mellan prefixen över- och under-?',options:['De betyder samma sak','De är morfologiska motpoler med motsatta innebörder','under- är mer formellt än över-'],correct:'De är morfologiska motpoler med motsatta innebörder'}
+    ]
+  },
+
+  '46-suffix-skap':{
+    level:'46', targetPattern:'Suffix –skap (förhållande, gemenskap, tillstånd)',
+    teacherDescription:'Elever identifierar substantiv bildade med suffixet -skap och förstår att det skapar abstrakta substantiv om förhållanden och gemenskaper. Luriga blindord: -het-substantiv (också abstrakta men annat suffix).',
+    studentInstruction:'Hitta alla ord där –skap i slutet skapar ett SUBSTANTIV om ett förhållande, en gemenskap eller ett tillstånd!',
+    targetWords:['vänskap','kamratskap','ägarskap','medborgarskap','vetenskap','kunskap','partnerskap','ledarskap','medlemskap','lärlingskap','brödraskap','systerskap','äktenskap','mästerskap','förmyndarskap','chefskap'],
+    distractorWords:['vän','kamrat','ägare','medborgare','ledare','medlem','lärling','mästare','chef','partner','frihet','vänlighet','godhet','säkerhet','möjlighet','enhet','skyldighet','rättighet','klass','lag','grupp','organisation','förening','förhållande','relation','kontakt'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','semantic','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Suffixet -skap fogas till substantiv och skapar abstrakta ord om förhållanden och gemenskaper: vän → vänskap, ledare → ledarskap. Jämför med -het (fri → frihet) – båda skapar abstrakta substantiv men av olika typer.',
+    contrastExample:{word:'frihet',reason:'"frihet" använder suffixet -het (fri + het = egenskapen att vara fri). "vänskap" använder suffixet -skap (vän + skap = förhållandet att vara vänner). Olika suffix, olika typer av abstrakta begrepp.'},
+    transferItems:[
+      {type:'fill',question:'Förhållandet att vara kamrater kallas ___ (kamrat + -skap).',correct:'kamratskap',hint:'kamrat + -skap = ?'},
+      {type:'choice',question:'Vilket suffix skapar substantivet "vänskap" av "vän"?',options:['-het','-lig','-skap','-lös'],correct:'-skap'},
+      {type:'rule',question:'Vad är skillnaden mellan -skap och -het?',options:['Ingen skillnad – de kan alltid bytas ut','–skap skapar ord om förhållanden/gemenskap; –het skapar ord om egenskaper','–het är mer formellt; –skap används bara i vardagsspråk'],correct:'–skap skapar ord om förhållanden/gemenskap; –het skapar ord om egenskaper'}
+    ]
+  },
+
+  '46-suffix-ning':{
+    level:'46', targetPattern:'Suffix –ning (verbalt substantiv)',
+    teacherDescription:'Elever identifierar substantiv bildade med suffixet -ning av verb och skiljer dem från -else-substantiv och -ande-former.',
+    studentInstruction:'Hitta alla ord där –ning i slutet har skapat ett SUBSTANTIV av ett verb – ett ord för en handling eller process!',
+    targetWords:['läsning','skrivning','räkning','teckning','hälsning','röstning','varning','ledning','undersökning','beräkning','utredning','inlärning','stämning','tändning','riktning','berättning'],
+    distractorWords:['läser','skriver','räknar','tecknar','hälsar','röstar','varnar','leder','undersöker','beräknar','utreder','inlär','berättelse','känsla','rörelse','upplevelse','händelse','förståelse','läsande','skrivande','räknande','ledande','varnade','utredde','klass','dag','bok','ord'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral'],
+    explanation:'Suffixet -ning fogas till verbstammar och skapar substantiv: läsa → läsning, undersöka → undersökning. Jämför med -else (berätta → berättelse) och -ande (läsa → läsande) – alla tre skapar verbala substantiv men med lite olika nyanser.',
+    contrastExample:{word:'berättelse',reason:'"berättelse" använder suffixet -else (berätta + else). "berättning" med -ning är ett mer konkret ord för en specifik berättelse. Båda är verbala substantiv från "berätta" – men med olika suffix och lätt olika stil.'},
+    transferItems:[
+      {type:'fill',question:'Handlingen att undersöka kallas en ___ (undersöka + -ning).',correct:'undersökning',hint:'undersöka → undersökning (obs: -a faller bort)'},
+      {type:'choice',question:'Vilket suffix används för att göra "rösta" till ett substantiv med -ning?',options:['röstelse','röstande','röstning','rösthet'],correct:'röstning'},
+      {type:'rule',question:'Vilken regel gäller för suffixet -ning?',options:['Det sätts framför verb som ett prefix','Det fogas till verbstammar och skapar substantiv för handlingar','Det gör substantiv till adjektiv'],correct:'Det fogas till verbstammar och skapar substantiv för handlingar'}
+    ]
+  },
+
+  '46-ordfamiljer-fri':{
+    level:'46', targetPattern:'Ordfamilj – roten fri– (= fri, obunden)',
+    teacherDescription:'Elever identifierar ord som morfologiskt tillhör ordfamiljen kring roten "fri" (= att vara fri/obunden) och skiljer dem från ord med frisk-, frys- och frid- som rötter.',
+    studentInstruction:'Hitta alla ord som verkligen har roten "fri" (= att vara fri och obunden) – inte bara ord som råkar börja med "fri" i skriften!',
+    targetWords:['fri','frihet','befria','frivillig','ofri','frigivning','frispråkig','friköpa','friluftsliv','frisläppa','frigöra','frihandel','friplats','fridag','frisinnad','frigiven'],
+    distractorWords:['frisk','friska','friskhet','friskna','friskluft','frys','frysa','frysbox','frid','fridsam','fridlyst','fridfull','frisar','frisör','frisering','obunden','självständig','ledig','oberoende','öppen','trygg','lös','fri-','befriad','friande'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','neutral','lookalike','lookalike'],
+    explanation:'Ordfamiljen kring "fri" (= obunden, fri från begränsning) innehåller: frihet, befria, frivillig, ofri, frigöra... Ord som "frisk" (= hälsosam), "frysa" (= bli kall) och "frid" (= lugn/fred) börjar med "fri" i skrift men har HELT ANDRA morfologiska rötter.',
+    contrastExample:{word:'frisk',reason:'"frisk" (healthy) är ett eget ord med roten frisk- – det har ingen koppling till "fri" (free). Jämför: "frihet" = fri + het (egenskap att vara fri). "friskhet" = frisk + het (egenskap att vara frisk). Olika rötter, helt skilt morfologiskt.'},
+    transferItems:[
+      {type:'choice',question:'Vilket ord tillhör INTE ordfamiljen kring "fri" (= obunden)?',options:['frihet','befria','frivillig','frisk'],correct:'frisk'},
+      {type:'fill',question:'Att köpa sig fri kallas att ___ sig (fri + köpa).',correct:'friköpa',hint:'fri + köpa = ?'},
+      {type:'rule',question:'Hur avgör man om ett ord verkligen tillhör en ordfamilj?',options:['Alla ord som börjar med samma bokstäver hör ihop','Orden måste dela samma morfologiska rot OCH ha besläktad innebörd','Ord som rimmar hör alltid ihop morfologiskt'],correct:'Orden måste dela samma morfologiska rot OCH ha besläktad innebörd'}
+    ]
+  }
+};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let g = {
+  screen:'idle', ex:null, exId:null,
+  score:0, streak:0, hstreak:0, falsePositives:0,
+  targetShown:new Set(), targetHit:new Set(), targetPending:new Set(), missedWords:[],
+  activeEls:[], activeSet:new Set(),
+  transferAnswers:[], transferTries:[],
+  spawnIv:null, driftRaf:null,
+  cfg:{
+    webhook: ls('ordspelet_webhook',''),
+    spawnRate: +ls('ordspelet_rate',1800)
+  }
+};
+
+function ls(k,d){ const v=localStorage.getItem(k); return v===null?d:v; }
+
+// ══════════════════════════════════════════
+//  DOM
+// ══════════════════════════════════════════
+const $  = id => document.getElementById(id);
+const el = {
+  hud:$('hud'), score:$('score'), hudTheme:$('hud-theme'), wordCount:$('word-count'),
+  field:$('field'), progWrap:$('prog-wrap'), prog:$('prog'), pauseOv:$('pause-ov'),
+  sIdle:$('s-idle'), sExplain:$('s-explain'), sTransfer:$('s-transfer'), sRes:$('s-res'),
+  exTitle:$('ex-title'), exHits:$('ex-hits'), exMiss:$('ex-miss'),
+  exWordList:$('ex-word-list'), exExplanation:$('ex-explanation'),
+  exCWord:$('ex-c-word'), exCReason:$('ex-c-reason'),
+  transferInstr:$('transfer-instr'), transferItems:$('transfer-items'),
+  transferBtnRow:$('transfer-btn-row'),
+  resPts:$('res-pts'), resDel1:$('res-del1'), resDel3:$('res-del3'),
+  missedBox:$('missed-box'), missedTags:$('missed-tags'),
+  sOverlay:$('s-overlay'), sPanel:$('s-panel'),
+  spWebhook:$('sp-webhook'), spRate:$('sp-rate'), spRateVal:$('sp-rate-val'),
+};
+
+// ══════════════════════════════════════════
+//  SCREENS
+// ══════════════════════════════════════════
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  g.screen=name;
+  const map={idle:el.sIdle,explain:el.sExplain,transfer:el.sTransfer,results:el.sRes};
+  if(map[name]) map[name].classList.add('on');
+  el.hud.style.display = name==='playing' ? 'flex' : 'none';
+  el.progWrap.style.display = name==='playing' ? 'block' : 'none';
+  el.field.classList.toggle('live', name==='playing');
+}
+
+// ══════════════════════════════════════════
+//  LEVEL FILTER
+// ══════════════════════════════════════════
+function setLevel(level){
+  document.querySelectorAll('.lvl-btn').forEach(b=>b.classList.toggle('on',b.dataset.level===level));
+  document.querySelectorAll('.ex-card[data-level]').forEach(c=>{
+    c.classList.toggle('show', c.dataset.level===level);
+  });
+  // AI card always shown
+  const ai=$('s-idle').querySelector('.ex-card[data-id="ai"]');
+  if(ai) ai.classList.add('show');
+}
+
+// ══════════════════════════════════════════
+//  GAME – DEL 1
+// ══════════════════════════════════════════
+function clearField(){
+  clearInterval(g.spawnIv);
+  stopDrift();
+  el.field.querySelectorAll('.wb').forEach(e=>{if(e._timer)clearTimeout(e._timer);e.remove();});
+  document.querySelectorAll('.cp').forEach(e=>e.remove());
+  g.activeEls=[]; g.activeSet=new Set();
+}
+
+function startDrift(){
+  if(g.driftRaf) return;
+  const HUD_H=72;
+  function tick(){
+    if(g.screen!=='playing'){g.driftRaf=null;return;}
+    const W=window.innerWidth, H=window.innerHeight;
+    g.activeEls.forEach(div=>{
+      if(!div.isConnected||div._vx===undefined) return;
+      div._x+=div._vx; div._y+=div._vy;
+      const w=div.offsetWidth||120, h=div.offsetHeight||42;
+      if(div._x<8){div._x=8;div._vx=Math.abs(div._vx);}
+      if(div._x+w>W-8){div._x=W-w-8;div._vx=-Math.abs(div._vx);}
+      if(div._y<HUD_H+4){div._y=HUD_H+4;div._vy=Math.abs(div._vy);}
+      if(div._y+h>H-8){div._y=H-h-8;div._vy=-Math.abs(div._vy);}
+      div.style.left=div._x+'px'; div.style.top=div._y+'px';
+    });
+    g.driftRaf=requestAnimationFrame(tick);
+  }
+  g.driftRaf=requestAnimationFrame(tick);
+}
+
+function stopDrift(){
+  if(g.driftRaf){cancelAnimationFrame(g.driftRaf);g.driftRaf=null;}
+}
+
+// ── MORFEMMARKERING ──────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function highlightMorpheme(word, def){
+  if(!def) return esc(word);
+  const vals=Array.isArray(def.value)?def.value:[def.value];
+  for(const val of vals){
+    const lw=word.toLowerCase(), lv=val.toLowerCase();
+    if(def.type==='suffix' && lw.endsWith(lv)){
+      const base=word.slice(0,word.length-val.length);
+      const suf=word.slice(word.length-val.length);
+      return `${esc(base)}<span class="morpheme-hi">${esc(suf)}</span>`;
+    }
+    if(def.type==='prefix' && lw.startsWith(lv)){
+      const pre=word.slice(0,val.length);
+      const rest=word.slice(val.length);
+      return `<span class="morpheme-hi">${esc(pre)}</span>${esc(rest)}`;
+    }
+  }
+  return esc(word);
+}
+
+const MORPHEME_HIGHLIGHTS={
+  'f1-plural':         {type:'suffix', value:['ar','or','er','n']},
+  'f1-bestämd':        {type:'suffix', value:['en','et','n']},
+  'f1-presens':        {type:'suffix', value:['ar','er']},
+  'f1-sammansattning': null,
+  '23-preteritum':     {type:'suffix', value:'ade'},
+  '23-presens':        {type:'suffix', value:['ar','er']},
+  '23-komparativ':     {type:'suffix', value:'are'},
+  '23-bestämd-plural': {type:'suffix', value:['arna','erna','orna','na','en']},
+  '23-starka-verb':    null,
+  '23-prefix-o':       {type:'prefix', value:'o'},
+  '23-perfekt':        {type:'suffix', value:'at'},
+  '23-imperativ':      null,
+  '46-person-are':     {type:'suffix', value:'are'},
+  '46-negation-o':     {type:'prefix', value:'o'},
+  '46-sammansättning': null,
+  '46-superlativ':     {type:'suffix', value:['ast','st']},
+  '46-prefix-be':      {type:'prefix', value:'be'},
+  '46-prefix-for':     {type:'prefix', value:'för'},
+  '46-prefix-sam':     {type:'prefix', value:'sam'},
+  '46-prefix-over':    {type:'prefix', value:'över'},
+  '46-prefix-under':   {type:'prefix', value:'under'},
+  '46-suffix-het':     {type:'suffix', value:['ighet','het']},
+  '46-suffix-ig':      {type:'suffix', value:['lig','ig']},
+  '46-suffix-los':     {type:'suffix', value:'lös'},
+  '46-suffix-skap':    {type:'suffix', value:'skap'},
+  '46-suffix-ning':    {type:'suffix', value:'ning'},
+  '46-ordfamiljer':    null,
+  '46-ordfamiljer-fri':null
+};
+// ─────────────────────────────────────────────────────────
+
+function startGame(exId, exercise){
+  clearField();
+  g.ex=exercise; g.exId=exId;
+  g.ex.morphemeHighlight = MORPHEME_HIGHLIGHTS[exId] || null;
+  g.score=0; g.streak=0; g.hstreak=0; g.falsePositives=0;
+  g.targetShown=new Set(); g.targetHit=new Set(); g.targetPending=new Set();
+  g.missedWords=[]; g.activeEls=[]; g.activeSet=new Set();
+
+  showScreen('playing');
+  g.screen='playing';
+  el.hudTheme.textContent=exercise.targetPattern;
+  updateHUD();
+
+  g.spawnIv=setInterval(spawnWord, g.cfg.spawnRate);
+  spawnWord();
+  startDrift();
+}
+
+function updateHUD(){
+  el.score.textContent=g.score;
+  el.score.classList.remove('do-pulse');
+  void el.score.offsetWidth;
+  el.score.classList.add('do-pulse');
+  el.wordCount.textContent=g.targetHit.size+' / '+g.ex.targetWords.length+' ord';
+}
+
+function spawnWord(){
+  if(g.screen!=='playing') return;
+  const maxW=window.innerWidth<480?6:window.innerWidth<768?8:12;
+  if(g.activeEls.length>=maxW) return;
+
+  // Check if all targets have been spawned and resolved
+  if(g.targetShown.size>=g.ex.targetWords.length && g.targetPending.size===0){
+    endDel1(); return;
+  }
+
+  let word, isTarget;
+  const unseenTargets=g.ex.targetWords.filter(w=>!g.targetShown.has(w)&&!g.targetPending.has(w));
+
+  // Om inga målord är synliga just nu → spawna alltid ett målord
+  const forceTarget = unseenTargets.length>0 && g.targetPending.size===0;
+  if(unseenTargets.length>0 && (forceTarget || Math.random()>.35)){
+    word=unseenTargets[Math.floor(Math.random()*unseenTargets.length)];
+    isTarget=true;
+  } else {
+    const dist=g.ex.distractorWords;
+    word=dist[Math.floor(Math.random()*dist.length)];
+    isTarget=false;
+    // If all targets already shown, don't keep spawning distractors forever
+    if(g.targetShown.size>=g.ex.targetWords.length && g.targetPending.size===0){
+      endDel1(); return;
+    }
+  }
+
+  const sizes=['sz-s','sz-m','sz-m','sz-l','sz-xl'];
+  const div=document.createElement('div');
+  div.className='wb '+sizes[Math.floor(Math.random()*sizes.length)];
+  if(isTarget) div.classList.add('target-word');
+  div.dataset.word=word; div.dataset.it=isTarget; div.dataset.st=Date.now();
+  div.textContent=word;
+
+  // Random position within visible area (below HUD)
+  const W=window.innerWidth, H=window.innerHeight;
+  div._x=30+Math.random()*(W-200);
+  div._y=80+Math.random()*(H-180);
+  div.style.left=div._x+'px'; div.style.top=div._y+'px';
+
+  // Slow drift velocity (pixels/frame at 60fps → ~0.1–0.3 px/frame)
+  const spd=0.1+Math.random()*0.2;
+  const ang=Math.random()*Math.PI*2;
+  div._vx=Math.cos(ang)*spd; div._vy=Math.sin(ang)*spd;
+  div.style.transform='rotate('+((Math.random()-.5)*8)+'deg)';
+
+  if(isTarget){ g.targetShown.add(word); g.targetPending.add(word); }
+
+  div.addEventListener('click',onWordClick);
+
+  // Words fade out and are removed after lifetime
+  const life=22000+Math.random()*10000;
+  div._timer=setTimeout(()=>{
+    if(!div.isConnected) return;
+    div.classList.add('fading');
+    setTimeout(()=>{
+      if(isTarget){g.targetPending.delete(word);if(!g.targetHit.has(word))g.missedWords.push(word);}
+      removeEl(div); checkDel1End();
+    },600);
+  },life);
+
+  el.field.appendChild(div);
+  requestAnimationFrame(()=>div.classList.add('visible'));
+  g.activeEls.push(div); g.activeSet.add(word);
+}
+
+function removeEl(div){
+  if(div._timer){clearTimeout(div._timer);div._timer=null;}
+  const i=g.activeEls.indexOf(div);
+  if(i!==-1) g.activeEls.splice(i,1);
+  g.activeSet.delete(div.dataset.word);
+  if(div.parentNode) div.remove();
+}
+
+function checkDel1End(){
+  if(g.screen!=='playing') return;
+  // Alla klickade = direkt avslut med fyrverkeri
+  if(g.targetHit.size>=g.ex.targetWords.length){ endDel1(); return; }
+  // Alla visade och inga kvar på skärmen = avslut
+  if(g.targetShown.size>=g.ex.targetWords.length && g.targetPending.size===0){ endDel1(); return; }
+  // Inga synliga målord kvar men det finns osedda → tvångsspawna ett direkt
+  const unseen=g.ex.targetWords.filter(w=>!g.targetShown.has(w)&&!g.targetPending.has(w));
+  if(unseen.length>0 && g.targetPending.size===0) spawnWord();
+}
+
+function onWordClick(e){
+  e.stopPropagation();
+  const div=e.currentTarget;
+  if(!div.isConnected) return;
+  div.removeEventListener('click',onWordClick);
+
+  const word=div.dataset.word, isTarget=div.dataset.it==='true';
+  const age=Date.now()-parseInt(div.dataset.st);
+
+  if(isTarget){
+    let pts=100;
+    g.streak++; if(g.streak>g.hstreak) g.hstreak=g.streak;
+    if(g.streak%3===0) pts+=50;
+    if(age<2000) pts+=25;
+    g.score+=pts; g.targetHit.add(word); g.targetPending.delete(word);
+    if(g.ex.morphemeHighlight) div.innerHTML=highlightMorpheme(word, g.ex.morphemeHighlight);
+    div.classList.add('wf-correct');
+    confetti(e.clientX,e.clientY);
+    updateHUD(); updateProg();
+    setTimeout(()=>{removeEl(div); checkDel1End();},520);
+  } else {
+    g.streak=0; g.falsePositives++;
+    g.score=Math.max(0,g.score-20);
+    div.classList.add('wf-wrong');
+    shakeEl(div,()=>{
+      if(!div.isConnected) return;
+      div.classList.remove('wf-wrong');
+      div.addEventListener('click',onWordClick);
+    });
+    updateHUD();
+  }
+}
+
+function updateProg(){
+  el.prog.style.width=(g.targetHit.size/g.ex.targetWords.length*100)+'%';
+}
+
+function shakeEl(div,cb){
+  const frames=[0,-12,12,-8,8,-4,4,0]; let i=0;
+  const t=setInterval(()=>{
+    div.style.marginLeft=frames[i]+'px';
+    if(++i>=frames.length){clearInterval(t);div.style.marginLeft='';cb();}
+  },55);
+}
+
+function confetti(cx,cy){
+  const colors=['#7c3aed','#06b6d4','#f59e0b','#10b981','#ec4899','#fbbf24'];
+  for(let i=0;i<12;i++){
+    const p=document.createElement('div');
+    p.className='cp';
+    p.style.cssText=`left:${cx}px;top:${cy}px;background:${colors[i%colors.length]};border-radius:${Math.random()>.5?'50%':'3px'};width:${5+Math.random()*7}px;height:${5+Math.random()*7}px`;
+    const ang=(i/12)*360+(Math.random()-.5)*30, dist=55+Math.random()*80;
+    p.style.setProperty('--dx',(Math.cos(ang*Math.PI/180)*dist)+'px');
+    p.style.setProperty('--dy',(Math.sin(ang*Math.PI/180)*dist-50)+'px');
+    p.style.setProperty('--cr',(Math.random()*360)+'deg');
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),950);
+  }
+}
+
+// ══════════════════════════════════════════
+//  DEL 2 – FÖRKLARING
+// ══════════════════════════════════════════
+function endDel1(){
+  if(g.screen!=='playing') return;
+  clearInterval(g.spawnIv);
+  stopDrift();
+  g.screen='explain';
+  // Kort fördröjning + fade av kvarvarande ord
+  g.activeEls.forEach(e=>{e.classList.add('fading');});
+  setTimeout(()=>{
+    g.activeEls.forEach(e=>{if(e.parentNode)e.remove();});
+    g.activeEls=[]; g.activeSet=new Set(); g.targetPending=new Set();
+
+  const ex=g.ex;
+  el.exTitle.textContent=ex.targetPattern;
+  el.exHits.textContent=g.targetHit.size+'/'+ex.targetWords.length;
+  el.exMiss.textContent=(ex.targetWords.length-g.targetHit.size);
+
+  el.exWordList.innerHTML=ex.targetWords.map(w=>{
+    const hi=ex.morphemeHighlight?highlightMorpheme(w,ex.morphemeHighlight):esc(w);
+    return `<span class="wr ${g.targetHit.has(w)?'hit':'miss'}">${g.targetHit.has(w)?'✓':'✗'} ${hi}</span>`;
+  }).join('');
+
+  el.exExplanation.textContent=ex.explanation;
+  el.exCWord.textContent=ex.contrastExample.word;
+  el.exCReason.textContent=ex.contrastExample.reason;
+
+  showScreen('explain');
+  },500); // setTimeout för fade-ut
+}
+
+// ══════════════════════════════════════════
+//  DEL 3 – ÖVERFÖRING
+// ══════════════════════════════════════════
+function startDel3(){
+  const ex=g.ex;
+  g.transferAnswers=new Array(ex.transferItems.length).fill(null);
+  g.transferTries=new Array(ex.transferItems.length).fill(0);
+
+  el.transferInstr.textContent='Visa att du förstår mönstret – använd det på nya ord!';
+  el.transferBtnRow.style.display='none';
+
+  const cont=el.transferItems;
+  cont.innerHTML='';
+
+  ex.transferItems.forEach((item,idx)=>{
+    const div=document.createElement('div');
+    div.className='ti'; div.dataset.idx=idx;
+
+    if(item.type==='choice'||item.type==='rule'){
+      div.innerHTML=`
+        <div class="ti-q">${item.question}</div>
+        <div class="ti-opts">${item.options.map(o=>`<button class="t-opt" data-val="${o}">${o}</button>`).join('')}</div>
+        <div class="ti-feedback" id="tf-${idx}"></div>`;
+      div.querySelectorAll('.t-opt').forEach(btn=>{
+        btn.addEventListener('click',()=>checkAnswer(idx,btn.dataset.val,div));
+      });
+    } else if(item.type==='fill'){
+      div.innerHTML=`
+        <div class="ti-q">${item.question}</div>
+        ${item.hint?`<div class="ti-hint" style="color:var(--accent-2)">Tips: ${item.hint}</div>`:''}
+        <div class="ti-fill-row">
+          <input class="ti-input" id="ti-inp-${idx}" type="text" placeholder="Skriv svaret…" autocomplete="off">
+          <button class="ti-check-btn" id="ti-ck-${idx}">✓</button>
+        </div>
+        <div class="ti-feedback" id="tf-${idx}"></div>`;
+      div.querySelector('.ti-check-btn').addEventListener('click',()=>{
+        const val=div.querySelector('.ti-input').value.trim();
+        checkAnswer(idx,val,div);
+      });
+      div.querySelector('.ti-input').addEventListener('keydown',e=>{
+        if(e.key==='Enter'){const val=e.target.value.trim();checkAnswer(idx,val,div);}
+      });
+    }
+
+    cont.appendChild(div);
+  });
+
+  showScreen('transfer');
+}
+
+function checkAnswer(idx,val,itemEl){
+  if(g.transferAnswers[idx]===true) return; // already correct
+  const item=g.ex.transferItems[idx];
+  g.transferTries[idx]++;
+  const norm=s=>s.toLowerCase().trim();
+  const isCorrect=norm(val)===norm(item.correct);
+  const fb=$(`tf-${idx}`);
+
+  if(isCorrect){
+    g.transferAnswers[idx]=true;
+    fb.textContent=levelFeedback('correct',g.ex.level);
+    fb.style.color='var(--correct)';
+    itemEl.querySelectorAll('.t-opt').forEach(b=>{
+      b.disabled=true;
+      if(b.dataset.val===val) b.classList.add('t-correct');
+    });
+    const ckBtn=$(`ti-ck-${idx}`);
+    const inp=$(`ti-inp-${idx}`);
+    if(ckBtn) ckBtn.disabled=true;
+    if(inp)   inp.disabled=true;
+  } else {
+    if(g.transferAnswers[idx]!==true) g.transferAnswers[idx]=false;
+    if(g.transferTries[idx]>=2){
+      fb.textContent='Rätt svar: '+item.correct;
+      fb.style.color='var(--text-dim)';
+      itemEl.querySelectorAll('.t-opt').forEach(b=>{
+        b.disabled=true;
+        if(norm(b.dataset.val)===norm(item.correct)) b.classList.add('t-correct');
+        else if(norm(b.dataset.val)===norm(val))      b.classList.add('t-wrong');
+      });
+      const ckBtn=$(`ti-ck-${idx}`);
+      const inp=$(`ti-inp-${idx}`);
+      if(ckBtn){ckBtn.disabled=true;}
+      if(inp){inp.disabled=true;}
+      g.transferAnswers[idx]=false;
+    } else {
+      fb.textContent=levelFeedback('wrong',g.ex.level)+' ('+g.transferTries[idx]+'/2 försök)';
+      fb.style.color='var(--wrong)';
+      if(itemEl.querySelector('.t-opt')){
+        itemEl.querySelectorAll('.t-opt').forEach(b=>{
+          if(norm(b.dataset.val)===norm(val)) b.classList.add('t-wrong');
+        });
+      }
+    }
+  }
+
+  // Show "Se resultat" when all items answered or out of tries
+  const allDone=g.transferAnswers.every(a=>a!==null)||
+                g.transferTries.every((t,i)=>t>=2||g.transferAnswers[i]!==null);
+  if(allDone) el.transferBtnRow.style.display='flex';
+}
+
+function levelFeedback(type, level){
+  const f={
+    correct:{
+      F1:'Rätt! De här orden hör ihop!',
+      '23':'Rätt. Du förstår mönstret!',
+      '46':'Rätt. Du tillämpar mönstret korrekt.'
+    },
+    wrong:{
+      F1:'Inte riktigt – försök igen!',
+      '23':'Inte riktigt. Titta på ordets ändelse.',
+      '46':'Inte riktigt. Titta på orddelen – vad gör den?'
+    }
+  };
+  return f[type][level]||f[type]['23'];
+}
+
+// ══════════════════════════════════════════
+//  RESULTS
+// ══════════════════════════════════════════
+function showResults(){
+  const del1Pts=Math.round((g.targetHit.size/g.ex.targetWords.length)*100);
+  const del3Correct=g.transferAnswers.filter(a=>a===true).length;
+  const del3Total=g.ex.transferItems.length;
+  const del3Pts=del3Total>0?Math.round((del3Correct/del3Total)*100):0;
+  const total=Math.round(g.score+(del3Correct*50));
+
+  el.resPts.textContent=total;
+  el.resDel1.textContent=g.targetHit.size+'/'+g.ex.targetWords.length;
+  el.resDel3.textContent=del3Correct+'/'+del3Total;
+
+  const uniqueMissed=[...new Set(g.missedWords)].filter(w=>!g.targetHit.has(w));
+  if(uniqueMissed.length){
+    el.missedBox.style.display='block';
+    el.missedTags.innerHTML=uniqueMissed.map(w=>`<span class="mt">${w}</span>`).join('');
+  } else {
+    el.missedBox.style.display='none';
+  }
+  showScreen('results');
+}
+
+// ══════════════════════════════════════════
+//  PAUSE
+// ══════════════════════════════════════════
+function goHome(){
+  clearField();
+  clearInterval(g.spawnIv);
+  stopDrift();
+  el.pauseOv.classList.remove('on');
+  el.progWrap.style.display='none';
+  g.screen='idle';
+  showScreen('idle');
+  spawnDecoWords();
+}
+
+function pauseGame(){
+  if(g.screen!=='playing') return;
+  clearInterval(g.spawnIv); stopDrift();
+  el.pauseOv.classList.add('on'); g.screen='paused';
+}
+function resumeGame(){
+  if(g.screen!=='paused') return;
+  el.pauseOv.classList.remove('on'); g.screen='playing';
+  g.spawnIv=setInterval(spawnWord,g.cfg.spawnRate);
+  startDrift();
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════
+function openSettings(){
+  el.spWebhook.value=g.cfg.webhook;
+  el.spRate.value=g.cfg.spawnRate;
+  el.spRateVal.textContent=(g.cfg.spawnRate/1000).toFixed(1)+'s';
+  el.sPanel.classList.add('on'); el.sOverlay.classList.add('on');
+}
+function closeSettings(){
+  g.cfg.webhook=el.spWebhook.value.trim();
+  g.cfg.spawnRate=parseInt(el.spRate.value);
+  localStorage.setItem('ordspelet_webhook',g.cfg.webhook);
+  localStorage.setItem('ordspelet_rate',g.cfg.spawnRate);
+  el.sPanel.classList.remove('on'); el.sOverlay.classList.remove('on');
+}
+
+// ══════════════════════════════════════════
+//  AI / N8N
+// ══════════════════════════════════════════
+async function generateAI(){
+  const desc=$('ai-inp').value.trim();
+  const level=document.querySelector('[data-ai-level].on')?.dataset.aiLevel||'23';
+  if(!desc) return;
+  const aiStatus=$('ai-status'), aiGo=$('ai-go');
+  if(!g.cfg.webhook){
+    aiStatus.textContent='⚠️ Ange webhook-URL ovan';
+    aiStatus.style.color='var(--wrong)'; return;
+  }
+  aiGo.disabled=true;
+  aiStatus.textContent='⏳ Genererar övning…'; aiStatus.style.color='var(--text-dim)';
+  try {
+    const resp=await fetch(g.cfg.webhook,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        theme:desc, level,
+        schema:{
+          required:['targetWords','distractorWords','distractorTypes','explanation','contrastExample','transferItems'],
+          distractorTypesAllowed:['neutral','lookalike','semantic'],
+          transferItemTypes:['choice','fill','rule'],
+          minLurikaRatio:0.33,
+          wordCountByLevel:{F1:{target:6,distractors:6},'23':{target:8,distractors:8},'46':{target:12,distractors:12}}
+        }
+      })
+    });
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    if(!data.targetWords?.length) throw new Error('Ogiltigt svar – targetWords saknas');
+
+    // Validate: at least 33% lurika distractors
+    const lurika=(data.distractorTypes||[]).filter(t=>t==='lookalike').length;
+    const total=(data.distractorWords||[]).length;
+    if(total>0 && lurika/total<0.3) console.warn('Varning: <30% lurika blindord – kontrollera n8n-prompten');
+
+    const custom={
+      level,
+      targetPattern:data.targetPattern||desc,
+      teacherDescription:data.teacherDescription||'',
+      studentInstruction:data.studentInstruction||'Klicka på alla ord som passar mönstret!',
+      targetWords:data.targetWords,
+      distractorWords:data.distractorWords||[],
+      distractorTypes:data.distractorTypes||[],
+      explanation:data.explanation||'',
+      contrastExample:data.contrastExample||{word:'',reason:''},
+      transferItems:data.transferItems||[]
+    };
+    aiStatus.textContent='✅ '+data.targetWords.length+' målord laddade!';
+    aiStatus.style.color='var(--correct)';
+    setTimeout(()=>{ closeSettings(); startGame('ai_custom',custom); },900);
+  } catch(err){
+    aiStatus.textContent='❌ '+err.message;
+    aiStatus.style.color='var(--wrong)';
+  } finally { aiGo.disabled=false; }
+}
+
+// ══════════════════════════════════════════
+//  IDLE DECORATIONS
+// ══════════════════════════════════════════
+function spawnDeco(){
+  const words=['svartare','hästar','lärare','hoppade','ofarlig','skolbok','bilar','snabbare','fiskare','katter','okänd'];
+  words.forEach((w,i)=>setTimeout(()=>{
+    if(g.screen!=='idle') return;
+    const d=document.createElement('div');
+    d.className='wb deco sz-'+['s','m','l'][i%3];
+    d.textContent=w;
+    d.style.left=(5+Math.random()*82)+'%';
+    d.style.top=(70+Math.random()*20)+'vh'; // starta nära botten
+    d.style.setProperty('--rd',(13+Math.random()*8)+'s');
+    d.style.setProperty('--drift',((Math.random()-.5)*70)+'px');
+    d.style.setProperty('--tilt',((Math.random()-.5)*8)+'deg');
+    d.addEventListener('animationend',()=>d.remove());
+    el.field.appendChild(d);
+  },i*450));
+  setTimeout(spawnDeco,17000);
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  // Level selector
+  document.querySelectorAll('.lvl-btn').forEach(b=>{
+    b.addEventListener('click',()=>setLevel(b.dataset.level));
+  });
+
+  // Exercise cards
+  document.querySelectorAll('.ex-card[data-id]').forEach(c=>{
+    c.addEventListener('click',()=>{
+      const id=c.dataset.id;
+      if(id==='ai') return;
+      const ex=EXERCISES[id];
+      if(ex) startGame(id,ex);
+    });
+  });
+
+  // HUD
+  $('btn-home').addEventListener('click',goHome);
+  $('btn-pause').addEventListener('click',()=>g.screen==='playing'?pauseGame():resumeGame());
+  $('btn-settings').addEventListener('click',openSettings);
+  el.pauseOv.addEventListener('click',resumeGame);
+
+  // Del 2 → Del 3
+  $('btn-to-transfer').addEventListener('click',startDel3);
+  $('btn-home-from-explain').addEventListener('click',()=>{clearField();showScreen('idle');});
+
+  // Del 3 → Results
+  $('btn-to-results').addEventListener('click',showResults);
+
+  // Results
+  $('btn-again').addEventListener('click',()=>startGame(g.exId,g.ex));
+  $('btn-home').addEventListener('click',()=>{clearField();showScreen('idle');});
+
+  // Settings
+  $('sp-close').addEventListener('click',closeSettings);
+  el.sOverlay.addEventListener('click',closeSettings);
+  el.spRate.addEventListener('input',()=>el.spRateVal.textContent=(el.spRate.value/1000).toFixed(1)+'s');
+
+  // AI level buttons in settings panel
+  document.querySelectorAll('[data-ai-level]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('[data-ai-level]').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+    });
+  });
+
+  // AI generate
+  $('ai-go').addEventListener('click',generateAI);
+  $('ai-inp').addEventListener('keydown',e=>{if(e.key==='Enter') generateAI();});
+
+  spawnDeco();
+});
+</script>
+</body>
+</html>
