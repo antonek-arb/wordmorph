@@ -116,7 +116,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
 .lvl-btn.on{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:white;box-shadow:0 0 14px rgba(124,58,237,.4)}
 
 /* Exercise grid */
-.ex-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:600px;width:100%}
+.ex-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:780px;width:100%}
+.ex-cat{grid-column:1/-1;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;
+  color:var(--text-dim);padding:10px 0 2px;border-bottom:1px solid var(--glass-b);margin-top:6px;display:none}
+.ex-cat.show{display:block}
 .ex-card{position:relative;overflow:hidden;background:var(--glass);border:1px solid var(--glass-b);
   border-radius:16px;padding:22px;cursor:pointer;transition:all .2s;display:none}
 .ex-card.show{display:block}
@@ -238,7 +241,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
 .pause-txt{font-size:2.6rem;font-weight:800}
 
 @media(max-width:480px){
-  .ex-grid{gap:8px}.ex-card{padding:13px}.lvl-sel{gap:6px}.lvl-btn{font-size:.75rem;padding:7px 12px}
+  .ex-grid{grid-template-columns:repeat(2,1fr);gap:8px}.ex-card{padding:13px}.lvl-sel{gap:6px}.lvl-btn{font-size:.75rem;padding:7px 12px}
   .wb{padding:12px 16px}#s-panel{width:100%;max-width:100vw}
   .res-stats{gap:14px}
 }
@@ -284,7 +287,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
     </div>
 
     <div class="ex-grid" id="ex-grid">
-      <!-- F-1 exercises -->
+
+      <!-- ═══ F-1: BÖJNING ═══ -->
+      <div class="ex-cat show" data-level="F1">Böjning</div>
       <div class="ex-card show" data-id="f1-plural" data-level="F1">
         <span class="ec-level">F–1</span>
         <span class="ec-icon">🔢</span>
@@ -297,19 +302,59 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
         <div class="ec-name">Den speciella saken</div>
         <div class="ec-sub">Klicka på orden om EN speciell sak</div>
       </div>
+      <div class="ex-card show" data-id="f1-presens" data-level="F1">
+        <span class="ec-level">F–1</span>
+        <span class="ec-icon">▶️</span>
+        <div class="ec-name">Händer just nu</div>
+        <div class="ec-sub">Klicka på ord om vad som sker nu</div>
+      </div>
 
-      <!-- 2-3 exercises -->
+      <!-- ═══ F-1: SAMMANSÄTTNING ═══ -->
+      <div class="ex-cat show" data-level="F1">Sammansättning</div>
+      <div class="ex-card show" data-id="f1-sammansattning" data-level="F1">
+        <span class="ec-level">F–1</span>
+        <span class="ec-icon">🔗</span>
+        <div class="ec-name">Ord av två ord</div>
+        <div class="ec-sub">Hitta ord som är ihopsatta</div>
+      </div>
+
+      <!-- ═══ 2-3: BÖJNING ═══ -->
+      <div class="ex-cat" data-level="23">Böjning</div>
+      <div class="ex-card" data-id="23-presens" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">▶️</span>
+        <div class="ec-name">Det händer nu</div>
+        <div class="ec-sub">Hitta ord som berättar om det som pågår</div>
+      </div>
       <div class="ex-card" data-id="23-preteritum" data-level="23">
         <span class="ec-level">2–3</span>
         <span class="ec-icon">⏮</span>
         <div class="ec-name">Det hände igår</div>
         <div class="ec-sub">Hitta ord som berättar om det förflutna</div>
       </div>
-      <div class="ex-card" data-id="23-presens" data-level="23">
+      <div class="ex-card" data-id="23-starka-verb" data-level="23">
         <span class="ec-level">2–3</span>
-        <span class="ec-icon">▶️</span>
-        <div class="ec-name">Det händer nu</div>
-        <div class="ec-sub">Hitta ord som berättar om det som pågår</div>
+        <span class="ec-icon">⚡</span>
+        <div class="ec-name">Knepiga igårord</div>
+        <div class="ec-sub">Oregelbundna verb i dåtid</div>
+      </div>
+      <div class="ex-card" data-id="23-perfekt" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">⏱️</span>
+        <div class="ec-name">Perfekt (–at)</div>
+        <div class="ec-sub">Ord som går ihop med "har"</div>
+      </div>
+      <div class="ex-card" data-id="23-imperativ" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">📣</span>
+        <div class="ec-name">Imperativ</div>
+        <div class="ec-sub">Uppmaningsord – Spring! Skriv!</div>
+      </div>
+      <div class="ex-card" data-id="23-bestämd-plural" data-level="23">
+        <span class="ec-level">2–3</span>
+        <span class="ec-icon">👥</span>
+        <div class="ec-name">Flera bestämda saker</div>
+        <div class="ec-sub">Hitta -arna, -erna, -orna, -en</div>
       </div>
       <div class="ex-card" data-id="23-komparativ" data-level="23">
         <span class="ec-level">2–3</span>
@@ -318,60 +363,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
         <div class="ec-sub">Hitta ord som jämför</div>
       </div>
 
-      <!-- 4-6 exercises -->
-      <div class="ex-card" data-id="46-person-are" data-level="46">
-        <span class="ec-level">4–6</span>
-        <span class="ec-icon">👷</span>
-        <div class="ec-name">Personsuffix -are</div>
-        <div class="ec-sub">En person som gör något</div>
-      </div>
-      <div class="ex-card" data-id="46-negation-o" data-level="46">
-        <span class="ec-level">4–6</span>
-        <span class="ec-icon">🚫</span>
-        <div class="ec-name">Negationsprefix o-</div>
-        <div class="ec-sub">Ordet betyder det MOTSATTA</div>
-      </div>
-      <div class="ex-card" data-id="46-sammansättning" data-level="46">
-        <span class="ec-level">4–6</span>
-        <span class="ec-icon">🧩</span>
-        <div class="ec-name">Sammansättningar: skol-</div>
-        <div class="ec-sub">Ord som börjar med skol-</div>
-      </div>
-
-      <!-- F-1 nya -->
-      <div class="ex-card show" data-id="f1-presens" data-level="F1">
-        <span class="ec-level">F–1</span>
-        <span class="ec-icon">▶️</span>
-        <div class="ec-name">Händer just nu</div>
-        <div class="ec-sub">Klicka på ord om vad som sker nu</div>
-      </div>
-      <div class="ex-card show" data-id="f1-sammansattning" data-level="F1">
-        <span class="ec-level">F–1</span>
-        <span class="ec-icon">🔗</span>
-        <div class="ec-name">Ord av två ord</div>
-        <div class="ec-sub">Hitta ord som är ihopsatta</div>
-      </div>
-
-      <!-- 2-3 nya -->
-      <div class="ex-card" data-id="23-bestämd-plural" data-level="23">
-        <span class="ec-level">2–3</span>
-        <span class="ec-icon">👥</span>
-        <div class="ec-name">Flera bestämda saker</div>
-        <div class="ec-sub">Hitta -arna, -erna, -orna, -en</div>
-      </div>
-      <div class="ex-card" data-id="23-starka-verb" data-level="23">
-        <span class="ec-level">2–3</span>
-        <span class="ec-icon">⚡</span>
-        <div class="ec-name">Knepiga igårord</div>
-        <div class="ec-sub">Oregelbundna verb i dåtid</div>
-      </div>
+      <!-- ═══ 2-3: PREFIX ═══ -->
+      <div class="ex-cat" data-level="23">Prefix</div>
       <div class="ex-card" data-id="23-prefix-o" data-level="23">
         <span class="ec-level">2–3</span>
         <span class="ec-icon">🔄</span>
         <div class="ec-name">Prefix o– (motsats)</div>
         <div class="ec-sub">o- vänder ordets betydelse</div>
       </div>
-
       <div class="ex-card" data-id="23-prefix-miss" data-level="23">
         <span class="ec-level">2–3</span>
         <span class="ec-icon">❌</span>
@@ -379,12 +378,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
         <div class="ec-sub">miss- gör att något görs FEL</div>
       </div>
 
-      <!-- 4-6 nya -->
+      <!-- ═══ 4-6: BÖJNING ═══ -->
+      <div class="ex-cat" data-level="46">Böjning</div>
       <div class="ex-card" data-id="46-superlativ" data-level="46">
         <span class="ec-level">4–6</span>
         <span class="ec-icon">🏆</span>
         <div class="ec-name">Superlativ (–ast)</div>
         <div class="ec-sub">Det allra mest av något</div>
+      </div>
+
+      <!-- ═══ 4-6: PREFIX ═══ -->
+      <div class="ex-cat" data-level="46">Prefix</div>
+      <div class="ex-card" data-id="46-negation-o" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🚫</span>
+        <div class="ec-name">Negationsprefix o-</div>
+        <div class="ec-sub">Ordet betyder det MOTSATTA</div>
       </div>
       <div class="ex-card" data-id="46-prefix-be" data-level="46">
         <span class="ec-level">4–6</span>
@@ -397,6 +406,33 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
         <span class="ec-icon">🔀</span>
         <div class="ec-name">Prefix för–</div>
         <div class="ec-sub">för- tillför ny riktning</div>
+      </div>
+      <div class="ex-card" data-id="46-prefix-sam" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🤝</span>
+        <div class="ec-name">Prefix sam–</div>
+        <div class="ec-sub">Göra något tillsammans</div>
+      </div>
+      <div class="ex-card" data-id="46-prefix-over" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">⬆️</span>
+        <div class="ec-name">Prefix över–</div>
+        <div class="ec-sub">Ovanpå, bortom, för mycket</div>
+      </div>
+      <div class="ex-card" data-id="46-prefix-under" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">⬇️</span>
+        <div class="ec-name">Prefix under–</div>
+        <div class="ec-sub">Under, grundläggande, för lite</div>
+      </div>
+
+      <!-- ═══ 4-6: SUFFIX ═══ -->
+      <div class="ex-cat" data-level="46">Suffix</div>
+      <div class="ex-card" data-id="46-person-are" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">👷</span>
+        <div class="ec-name">Personsuffix -are</div>
+        <div class="ec-sub">En person som gör något</div>
       </div>
       <div class="ex-card" data-id="46-suffix-het" data-level="46">
         <span class="ec-level">4–6</span>
@@ -416,46 +452,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
         <div class="ec-name">Suffix –lös</div>
         <div class="ec-sub">Ord som betyder "utan något"</div>
       </div>
-      <div class="ex-card" data-id="46-ordfamiljer" data-level="46">
-        <span class="ec-level">4–6</span>
-        <span class="ec-icon">🌳</span>
-        <div class="ec-name">Ordfamilj: lär–</div>
-        <div class="ec-sub">Ord som delar roten lär–</div>
-      </div>
-
-      <!-- 2-3 nya övningstyper -->
-      <div class="ex-card" data-id="23-perfekt" data-level="23">
-        <span class="ec-level">2–3</span>
-        <span class="ec-icon">⏱️</span>
-        <div class="ec-name">Perfekt (–at)</div>
-        <div class="ec-sub">Ord som går ihop med "har"</div>
-      </div>
-      <div class="ex-card" data-id="23-imperativ" data-level="23">
-        <span class="ec-level">2–3</span>
-        <span class="ec-icon">📣</span>
-        <div class="ec-name">Imperativ</div>
-        <div class="ec-sub">Uppmaningsord – Spring! Skriv!</div>
-      </div>
-
-      <!-- 4-6 nya övningstyper -->
-      <div class="ex-card" data-id="46-prefix-sam" data-level="46">
-        <span class="ec-level">4–6</span>
-        <span class="ec-icon">🤝</span>
-        <div class="ec-name">Prefix sam–</div>
-        <div class="ec-sub">Göra något tillsammans</div>
-      </div>
-      <div class="ex-card" data-id="46-prefix-over" data-level="46">
-        <span class="ec-level">4–6</span>
-        <span class="ec-icon">⬆️</span>
-        <div class="ec-name">Prefix över–</div>
-        <div class="ec-sub">Ovanpå, bortom, för mycket</div>
-      </div>
-      <div class="ex-card" data-id="46-prefix-under" data-level="46">
-        <span class="ec-level">4–6</span>
-        <span class="ec-icon">⬇️</span>
-        <div class="ec-name">Prefix under–</div>
-        <div class="ec-sub">Under, grundläggande, för lite</div>
-      </div>
       <div class="ex-card" data-id="46-suffix-skap" data-level="46">
         <span class="ec-level">4–6</span>
         <span class="ec-icon">🫂</span>
@@ -467,6 +463,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
         <span class="ec-icon">📋</span>
         <div class="ec-name">Suffix –ning</div>
         <div class="ec-sub">Verb blir substantiv med –ning</div>
+      </div>
+
+      <!-- ═══ 4-6: SAMMANSÄTTNING & ORDFAMILJER ═══ -->
+      <div class="ex-cat" data-level="46">Sammansättning & Ordfamiljer</div>
+      <div class="ex-card" data-id="46-sammansättning" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🧩</span>
+        <div class="ec-name">Sammansättningar: skol-</div>
+        <div class="ec-sub">Ord som börjar med skol-</div>
+      </div>
+      <div class="ex-card" data-id="46-ordfamiljer" data-level="46">
+        <span class="ec-level">4–6</span>
+        <span class="ec-icon">🌳</span>
+        <div class="ec-name">Ordfamilj: lär–</div>
+        <div class="ec-sub">Ord som delar roten lär–</div>
       </div>
       <div class="ex-card" data-id="46-ordfamiljer-fri" data-level="46">
         <span class="ec-level">4–6</span>
@@ -1110,6 +1121,9 @@ function showScreen(name){
 function setLevel(level){
   document.querySelectorAll('.lvl-btn').forEach(b=>b.classList.toggle('on',b.dataset.level===level));
   document.querySelectorAll('.ex-card[data-level]').forEach(c=>{
+    c.classList.toggle('show', c.dataset.level===level);
+  });
+  document.querySelectorAll('.ex-cat[data-level]').forEach(c=>{
     c.classList.toggle('show', c.dataset.level===level);
   });
   // AI card always shown
