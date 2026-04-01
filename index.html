@@ -74,8 +74,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
 @keyframes morpheme-pulse{
   0%,100%{text-shadow:0 0 8px rgba(251,191,36,.6)}
   50%{text-shadow:0 0 20px rgba(251,191,36,1),0 0 40px rgba(251,191,36,.4)}}
+/* Second morpheme color (compound words – part 2) */
+.morpheme-hi2{
+  background:rgba(6,182,212,.28);
+  color:#a5f3fc;
+  border-radius:4px;
+  padding:0 3px;
+  font-weight:900;
+  text-shadow:0 0 10px rgba(6,182,212,.75),0 0 20px rgba(6,182,212,.35);
+  letter-spacing:.02em;
+  animation:morpheme-pulse2 2.2s ease-in-out infinite}
+@keyframes morpheme-pulse2{
+  0%,100%{text-shadow:0 0 8px rgba(6,182,212,.6)}
+  50%{text-shadow:0 0 20px rgba(6,182,212,1),0 0 40px rgba(6,182,212,.4)}}
 /* In word-result list (Del 2) */
 .wr .morpheme-hi{animation:none;font-size:1.05em}
+.wr .morpheme-hi2{animation:none;font-size:1.05em}
 
 /* rise – idle screen decorations */
 @keyframes rise{
@@ -276,7 +290,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
 <div id="s-idle" class="screen on">
   <div style="display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:540px">
     <div class="game-title">
-      <h1>Ordmorf</h1>
+      <h1>Ordmorf <span style="font-size:.35em;color:#ef4444!important;font-weight:600;vertical-align:super;text-shadow:0 0 8px rgba(239,68,68,.6),0 0 20px rgba(239,68,68,.3);-webkit-text-fill-color:#ef4444;background:none;-webkit-background-clip:unset">v 0.3</span></h1>
       <p>Klicka på rätt ord — lär dig se mönster i ord</p>
     </div>
 
@@ -884,7 +898,7 @@ const EXERCISES = {
     transferItems:[
       {type:'fill',question:'Egenskapen att vara vänlig kallas ___ (vänlig + -het).',correct:'vänlighet',hint:'Tänk på stavningen: -ig + het = -ighet'},
       {type:'fill',question:'Egenskapen att vara ensam kallas ___.',correct:'ensamhet',hint:'ensam + -het = ?'},
-      {type:'choice',question:'Vilket ord är ett substantiv bildat med suffixet -het?',options:['snabb','snabbare','snabbaste','snabbhet'],correct:'snabbhet'}
+      {type:'choice',question:'Vilket ord är bildat av ett adjektiv med suffixet -het?',options:['snabb','snabbare','snabbaste','snabbhet'],correct:'snabbhet'}
     ]
   },
 
@@ -1172,6 +1186,26 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 
 function highlightMorpheme(word, def){
   if(!def) return esc(word);
+  // Compound type: split word into two parts with separate colors
+  if(def.type==='compound' && def.splits){
+    const lw=word.toLowerCase();
+    const split=def.splits[lw];
+    if(split){
+      const p1=word.slice(0,split);
+      const p2=word.slice(split);
+      return `<span class="morpheme-hi">${esc(p1)}</span><span class="morpheme-hi2">${esc(p2)}</span>`;
+    }
+    // Fallback: try prefix match for compound with known förled
+    if(def.prefix){
+      const lp=def.prefix.toLowerCase();
+      if(lw.startsWith(lp)){
+        const p1=word.slice(0,def.prefix.length);
+        const p2=word.slice(def.prefix.length);
+        return `<span class="morpheme-hi">${esc(p1)}</span><span class="morpheme-hi2">${esc(p2)}</span>`;
+      }
+    }
+    return esc(word);
+  }
   const vals=Array.isArray(def.value)?def.value:[def.value];
   for(const val of vals){
     const lw=word.toLowerCase(), lv=val.toLowerCase();
@@ -1193,7 +1227,8 @@ const MORPHEME_HIGHLIGHTS={
   'f1-plural':         {type:'suffix', value:['ar','or','er','n']},
   'f1-bestämd':        {type:'suffix', value:['en','et','n']},
   'f1-presens':        {type:'suffix', value:['ar','er']},
-  'f1-sammansattning': null,
+  'f1-sammansattning': {type:'compound', splits:{
+    'fotboll':3,'glasögon':4,'tandkräm':4,'brevlåda':4,'snögubbe':3,'hundkoja':4,'julafton':3,'solsken':3}},
   '23-preteritum':     {type:'suffix', value:'ade'},
   '23-presens':        {type:'suffix', value:['ar','er']},
   '23-komparativ':     {type:'suffix', value:'are'},
@@ -1204,7 +1239,7 @@ const MORPHEME_HIGHLIGHTS={
   '23-imperativ':      null,
   '46-person-are':     {type:'suffix', value:'are'},
   '46-negation-o':     {type:'prefix', value:'o'},
-  '46-sammansättning': null,
+  '46-sammansättning': {type:'compound', prefix:'skol'},
   '46-superlativ':     {type:'suffix', value:['ast','st']},
   '46-prefix-be':      {type:'prefix', value:'be'},
   '46-prefix-for':     {type:'prefix', value:'för'},
@@ -1228,6 +1263,7 @@ function startGame(exId, exercise){
   g.score=0; g.streak=0; g.hstreak=0; g.falsePositives=0;
   g.targetShown=new Set(); g.targetHit=new Set(); g.targetPending=new Set();
   g.missedWords=[]; g.activeEls=[]; g.activeSet=new Set();
+  g.distSinceTarget=0;
 
   showScreen('playing');
   g.screen='playing';
@@ -1260,19 +1296,27 @@ function spawnWord(){
   let word, isTarget;
   const unseenTargets=g.ex.targetWords.filter(w=>!g.targetShown.has(w)&&!g.targetPending.has(w));
 
-  // Om inga målord är synliga just nu → spawna alltid ett målord
-  const forceTarget = unseenTargets.length>0 && g.targetPending.size===0;
-  if(unseenTargets.length>0 && (forceTarget || Math.random()>.35)){
+  // Kolla om spelet är klart (alla målord funna)
+  if(g.targetShown.size>=g.ex.targetWords.length && g.targetPending.size===0){
+    endDel1(); return;
+  }
+
+  // Avgör om vi spawnar målord eller bomord
+  // Strategi: minst 4 bomord mellan varje målord så spelplanen fylls
+  const minDistBetween = 4;
+  const canSpawnTarget = unseenTargets.length>0 && g.distSinceTarget >= minDistBetween;
+  const forceTarget = canSpawnTarget && g.targetPending.size===0;
+  const targetChance = canSpawnTarget ? 0.25 : 0;
+
+  if(forceTarget || (canSpawnTarget && Math.random() < targetChance)){
     word=unseenTargets[Math.floor(Math.random()*unseenTargets.length)];
     isTarget=true;
+    g.distSinceTarget=0;
   } else {
     const dist=g.ex.distractorWords;
     word=dist[Math.floor(Math.random()*dist.length)];
     isTarget=false;
-    // If all targets already shown, don't keep spawning distractors forever
-    if(g.targetShown.size>=g.ex.targetWords.length && g.targetPending.size===0){
-      endDel1(); return;
-    }
+    g.distSinceTarget++;
   }
 
   const sizes=['sz-s','sz-m','sz-m','sz-l','sz-xl'];
