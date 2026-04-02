@@ -672,15 +672,15 @@ const EXERCISES = {
   },
   '23-presens': {
     level:'23', targetPattern:'Presens -ar (grupp 1 verb)',
-    teacherDescription:'Elever identifierar grupp 1-verb i presens (ändelse -ar). Blindord: preteritum av samma verb + infinitiv.',
-    studentInstruction:'Hitta alla ord som berättar om något som händer NU – just idag!',
-    targetWords:['hoppar','cyklar','pratar','skrattar','städar','lyssnar','dansar','klättrar','simmar','springer','läser','sjunger'],
-    distractorWords:['hoppade','cyklade','pratade','skrattade','spelade','tittade','dansade','simmade','hoppat','pratat','dansat','simmat','äter','dricker','flyger','biter','hoppa','cykla','prata','simma','dansa','springa','sprang','gick','åt','drack','sjöng','stod'],
-    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
-    explanation:'Dessa ord slutar på -ar. Den ändelsen visar att det händer NU. "Hoppar" = hoppar just nu. Jämför: hoppar (nu) – hoppade (igår).',
-    contrastExample:{word:'hoppade',reason:'"Hoppade" hände förut – preteritum. Ändelsen är -ade. "Hoppar" händer nu – presens.'},
+    teacherDescription:'Elever identifierar grupp 1-verb i presens (ändelse -ar). Blindord: preteritum av samma verb + infinitiv + starka verb i presens (-er).',
+    studentInstruction:'Hitta alla ord som slutar på -ar och berättar om något som händer NU!',
+    targetWords:['hoppar','cyklar','pratar','skrattar','städar','lyssnar','dansar','klättrar','simmar','målar','spelar','lagar'],
+    distractorWords:['hoppade','cyklade','pratade','skrattade','spelade','tittade','dansade','simmade','hoppat','pratat','dansat','simmat','springer','läser','sjunger','äter','dricker','flyger','biter','hoppa','cykla','prata','simma','dansa','springa','sprang','gick','åt','drack','sjöng','stod'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    explanation:'Dessa ord slutar på -ar. Den ändelsen visar att det händer NU. "Hoppar" = hoppar just nu. Jämför: hoppar (nu) – hoppade (igår). OBS: "springer" och "läser" händer också nu, men de är starka verb med ändelsen -er – inte grupp 1!',
+    contrastExample:{word:'springer',reason:'"Springer" händer också nu (presens), men det är ett starkt verb med ändelsen -er. Grupp 1-verb har alltid ändelsen -ar.'},
     transferItems:[
-      {type:'choice',question:'Maja ___ hem från skolan varje dag.',options:['sprang','gick','gick','cyklar'],correct:'cyklar'},
+      {type:'choice',question:'Maja ___ hem från skolan varje dag.',options:['sprang','gick','går','cyklar'],correct:'cyklar'},
       {type:'choice',question:'Vilket ord berättar om något som händer NU?',options:['hoppade','hoppa','hoppar','hoppat'],correct:'hoppar'}
     ]
   },
@@ -874,9 +874,9 @@ const EXERCISES = {
     level:'46', targetPattern:'Prefix för–',
     teacherDescription:'Elever identifierar ord med prefixet för- och förstår att det kan ge innebörd av "framåt", "bort", "fel" eller förstärkning.',
     studentInstruction:'Hitta alla ord där för- i början är ett PREFIX – inte en del av ett eget ord!',
-    targetWords:['förbereda','förbjuda','förklara','förbättra','försämra','förhindra','förändra','försena','förvänta','försvinna','förstå','förbise','förse','förlora','förena','förnya'],
-    distractorWords:['bereda','bjuda','klara','hindra','ändra','vänta','förr','förut','förra','förrän','förbi','förutom','förste','förord','förledd','förfader','frukost','fönster','frisk','fri','frossa','fröjd','forma','arbeta','tänka','göra','hjälpa','öppna','stänga','börja','sluta','dela'],
-    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
+    targetWords:['förbereda','förbjuda','förklara','förbättra','försämra','förhindra','förändra','försena','förvänta','försvinna','förstå','förbise','förse','förlora','förena','förnya','förord','förleda','förfader'],
+    distractorWords:['bereda','bjuda','klara','hindra','ändra','vänta','förr','förut','förra','förrän','förutom','förste','frukost','fönster','frisk','fri','frossa','fröjd','forma','arbeta','tänka','göra','hjälpa','öppna','stänga','börja','sluta','dela','fyra','fråga','fräsch'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral','neutral'],
     explanation:'Prefixet för- ger ord som "framåt/i förväg" (förbereda), "bort/fel" (försvinna, förbise) eller förstärkning (förstå). OBS: "förra", "frukost" och "fönster" börjar med "för" i uttal men är INTE ord med prefixet för-.',
     contrastExample:{word:'frukost',reason:'"Frukost" börjar med ett "för"-liknande ljud men är ett eget ord – det är inte prefixet för- framför ett basord. Jämför: för- + klara = förklara (prefix + verb).'},
     transferItems:[
@@ -962,7 +962,7 @@ const EXERCISES = {
     contrastExample:{word:'hoppade',reason:'"Hoppade" är preteritum – berättar om igår: "jag hoppade igår". Supinum "hoppat" kräver "har": "jag har hoppat" (någon gång). Två olika former, två olika tidsperspektiv.'},
     transferItems:[
       {type:'choice',question:'Vilket ord är supinum (passar med "har")?',options:['hoppar','hoppade','hoppat','hoppa'],correct:'hoppat'},
-      {type:'fill',question:'Vi ___ aldrig simmat i det havet. (perfekt av simma)',correct:'simmat',hint:'simma → simmade → ?'}
+      {type:'fill',question:'Vi har aldrig ___ i det havet. (supinum av simma)',correct:'simmat',hint:'simma → simmade → simmat'}
     ]
   },
 
@@ -1066,9 +1066,9 @@ const EXERCISES = {
     level:'46', targetPattern:'Ordfamilj – roten fri– (= fri, obunden)',
     teacherDescription:'Elever identifierar ord som morfologiskt tillhör ordfamiljen kring roten "fri" (= att vara fri/obunden) och skiljer dem från ord med frisk-, frys- och frid- som rötter.',
     studentInstruction:'Hitta alla ord som verkligen har roten "fri" (= att vara fri och obunden) – inte bara ord som råkar börja med "fri" i skriften!',
-    targetWords:['fri','frihet','befria','frivillig','ofri','frigivning','frispråkig','friköpa','friluftsliv','frisläppa','frigöra','frihandel','friplats','fridag','frisinnad','frigiven'],
-    distractorWords:['frisk','friska','friskhet','friskna','friskluft','frys','frysa','frysbox','frid','fridsam','fridlyst','fridfull','frisar','frisör','frisering','obunden','självständig','ledig','oberoende','öppen','trygg','lös','fri-','befriad','friande'],
-    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','neutral','lookalike','lookalike'],
+    targetWords:['fri','frihet','befria','frivillig','ofri','frigivning','frispråkig','friköpa','friluftsliv','frisläppa','frigöra','frihandel','friplats','fridag','frisinnad','frigiven','befriad'],
+    distractorWords:['frisk','friska','friskhet','friskna','friskluft','frys','frysa','frysbox','frid','fridsam','fridlyst','fridfull','frisar','frisör','frisering','obunden','självständig','ledig','oberoende','öppen','trygg','lös','fri-'],
+    distractorTypes:['lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','lookalike','semantic','semantic','semantic','semantic','semantic','semantic','semantic','neutral'],
     explanation:'Ordfamiljen kring "fri" (= obunden, fri från begränsning) innehåller: frihet, befria, frivillig, ofri, frigöra... Ord som "frisk" (= hälsosam), "frysa" (= bli kall) och "frid" (= lugn/fred) börjar med "fri" i skrift men har HELT ANDRA morfologiska rötter.',
     contrastExample:{word:'frisk',reason:'"frisk" (healthy) är ett eget ord med roten frisk- – det har ingen koppling till "fri" (free). Jämför: "frihet" = fri + het (egenskap att vara fri). "friskhet" = frisk + het (egenskap att vara frisk). Olika rötter, helt skilt morfologiskt.'},
     transferItems:[
@@ -1230,7 +1230,7 @@ const MORPHEME_HIGHLIGHTS={
   'f1-sammansattning': {type:'compound', splits:{
     'fotboll':3,'glasögon':4,'tandkräm':4,'brevlåda':4,'snögubbe':3,'hundkoja':4,'julafton':3,'solsken':3}},
   '23-preteritum':     {type:'suffix', value:'ade'},
-  '23-presens':        {type:'suffix', value:['ar','er']},
+  '23-presens':        {type:'suffix', value:'ar'},
   '23-komparativ':     {type:'suffix', value:'are'},
   '23-bestämd-plural': {type:'suffix', value:['arna','erna','orna','na','en']},
   '23-starka-verb':    null,
@@ -1246,7 +1246,7 @@ const MORPHEME_HIGHLIGHTS={
   '46-prefix-sam':     {type:'prefix', value:'sam'},
   '46-prefix-over':    {type:'prefix', value:'över'},
   '46-prefix-under':   {type:'prefix', value:'under'},
-  '46-suffix-het':     {type:'suffix', value:['ighet','het']},
+  '46-suffix-het':     {type:'suffix', value:'het'},
   '46-suffix-ig':      {type:'suffix', value:['lig','ig']},
   '46-suffix-los':     {type:'suffix', value:'lös'},
   '46-suffix-skap':    {type:'suffix', value:'skap'},
