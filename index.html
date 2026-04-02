@@ -1188,8 +1188,34 @@ function startDrift(){
   function tick(){
     if(g.screen!=='playing'){g.driftRaf=null;return;}
     const W=window.innerWidth, H=window.innerHeight;
-    g.activeEls.forEach(div=>{
-      if(!div.isConnected||div._vx===undefined) return;
+    // Repulsion pass: push overlapping words apart
+    const els=g.activeEls.filter(d=>d.isConnected&&d._vx!==undefined);
+    for(let i=0;i<els.length;i++){
+      const a=els[i];
+      const aw=a.offsetWidth||120, ah=a.offsetHeight||42;
+      for(let j=i+1;j<els.length;j++){
+        const b=els[j];
+        const bw=b.offsetWidth||120, bh=b.offsetHeight||42;
+        const dx=(a._x+aw/2)-(b._x+bw/2);
+        const dy=(a._y+ah/2)-(b._y+bh/2);
+        const minX=(aw+bw)/2+12;
+        const minY=(ah+bh)/2+4;
+        if(Math.abs(dx)<minX && Math.abs(dy)<minY){
+          const push=0.15;
+          const sx=dx>0?push:-push;
+          const sy=dy>0?push:-push;
+          a._vx+=sx; a._vy+=sy;
+          b._vx-=sx; b._vy-=sy;
+        }
+      }
+    }
+    // Clamp speeds so repulsion doesn't make words fly
+    els.forEach(div=>{
+      const maxSpd=0.4;
+      const spd=Math.sqrt(div._vx*div._vx+div._vy*div._vy);
+      if(spd>maxSpd){div._vx*=maxSpd/spd;div._vy*=maxSpd/spd;}
+    });
+    els.forEach(div=>{
       div._x+=div._vx; div._y+=div._vy;
       const w=div.offsetWidth||120, h=div.offsetHeight||42;
       if(div._x<8){div._x=8;div._vx=Math.abs(div._vx);}
@@ -1352,10 +1378,28 @@ function spawnWord(){
   div.dataset.word=word; div.dataset.it=isTarget; div.dataset.st=Date.now();
   div.textContent=word;
 
-  // Random position within visible area (below HUD)
+  // Position with collision avoidance
   const W=window.innerWidth, H=window.innerHeight;
-  div._x=30+Math.random()*(W-200);
-  div._y=80+Math.random()*(H-180);
+  const pad=20; // minimum gap between words
+  const estW=word.length*14+30; // estimated word width in px
+  const estH=44; // estimated word height in px
+  let bestX=30+Math.random()*(W-200), bestY=80+Math.random()*(H-180), bestDist=0;
+  for(let attempt=0;attempt<15;attempt++){
+    const tx=30+Math.random()*(W-200);
+    const ty=80+Math.random()*(H-180);
+    let minDist=Infinity;
+    for(const other of g.activeEls){
+      const dx=tx-(other._x||0), dy=ty-(other._y||0);
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      const minReq=Math.max(estW,80)+pad;
+      if(dist<minReq) minDist=Math.min(minDist,dist);
+      else minDist=Math.min(minDist,dist);
+    }
+    if(g.activeEls.length===0) minDist=999;
+    if(minDist>bestDist){bestDist=minDist;bestX=tx;bestY=ty;}
+    if(bestDist>=(estW+pad)) break; // good enough
+  }
+  div._x=bestX; div._y=bestY;
   div.style.left=div._x+'px'; div.style.top=div._y+'px';
 
   // Slow drift velocity (pixels/frame at 60fps → ~0.1–0.3 px/frame)
