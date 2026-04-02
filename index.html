@@ -215,6 +215,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
 .missed-tags{display:flex;flex-wrap:wrap;gap:8px}
 .mt{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.3);color:#fca5a5;padding:6px 14px;border-radius:20px;font-size:.95rem}
 
+/* TOPPLISTA */
+.toplist{background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;
+  padding:16px 20px;max-width:500px;width:100%;text-align:left}
+.toplist h3{font-size:.82rem;color:var(--accent-3);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;text-align:center}
+.toplist-empty{font-size:.85rem;color:var(--text-dim);text-align:center;padding:8px 0}
+.tl-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.tl-row:last-child{border-bottom:none}
+.tl-rank{font-size:.85rem;font-weight:800;color:var(--accent-3);min-width:22px;text-align:center}
+.tl-rank.gold{color:#fbbf24}.tl-rank.silver{color:#94a3b8}.tl-rank.bronze{color:#d97706}
+.tl-name{font-size:.9rem;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-pts{font-size:.9rem;font-weight:700;color:var(--accent-2)}
+.tl-date{font-size:.75rem;color:var(--text-dim)}
+.tl-new{animation:tl-flash .6s ease}
+@keyframes tl-flash{0%{background:rgba(251,191,36,.3)}100%{background:transparent}}
+
 /* SHARED BUTTONS */
 .btn-p{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:none;border-radius:12px;
   padding:15px 44px;color:white;font-family:var(--font);font-weight:700;font-size:1.1rem;
@@ -292,6 +307,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
     <div class="game-title">
       <h1>Ordmorf <span style="font-size:.35em;color:#ef4444!important;font-weight:600;vertical-align:super;text-shadow:0 0 8px rgba(239,68,68,.6),0 0 20px rgba(239,68,68,.3);-webkit-text-fill-color:#ef4444;background:none;-webkit-background-clip:unset">v 0.3</span></h1>
       <p>Klicka på rätt ord — lär dig se mönster i ord</p>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:.85rem;color:var(--text-dim)">Mitt namn:</span>
+      <input type="text" id="player-name" maxlength="20" placeholder="Spelare"
+        style="background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:6px 12px;color:var(--text);font-family:var(--font);font-size:.9rem;width:140px;outline:none"
+      >
     </div>
 
     <div class="lvl-sel">
@@ -578,6 +600,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
     <div class="missed-box" id="missed-box">
       <h3>Missade målord – öva på dessa!</h3>
       <div class="missed-tags" id="missed-tags"></div>
+    </div>
+    <div class="toplist" id="res-toplist">
+      <h3>🏆 Veckans topplista</h3>
+      <div id="res-toplist-rows"></div>
     </div>
     <div class="btn-row">
       <button class="btn-p" id="btn-again">🔄 Gör om</button>
@@ -1608,7 +1634,70 @@ function showResults(){
   } else {
     el.missedBox.style.display='none';
   }
+
+  // Spara och visa topplista
+  saveTopScore(g.exId, total);
+  renderToplist(g.exId);
+
   showScreen('results');
+}
+
+// ══════════════════════════════════════════
+//  TOPPLISTA (localStorage, veckobas)
+// ══════════════════════════════════════════
+function getWeekKey(){
+  const d=new Date(), jan1=new Date(d.getFullYear(),0,1);
+  const week=Math.ceil(((d-jan1)/86400000+jan1.getDay()+1)/7);
+  return d.getFullYear()+'w'+week;
+}
+
+function getTopScores(exId){
+  try{
+    const all=JSON.parse(localStorage.getItem('ordmorf_top')||'{}');
+    const week=getWeekKey();
+    return (all[week]&&all[week][exId])||[];
+  }catch(e){return[];}
+}
+
+function saveTopScore(exId, pts){
+  try{
+    const all=JSON.parse(localStorage.getItem('ordmorf_top')||'{}');
+    const week=getWeekKey();
+    if(!all[week]) all[week]={};
+    if(!all[week][exId]) all[week][exId]=[];
+    const name=localStorage.getItem('ordmorf_player')||'Spelare';
+    all[week][exId].push({name, pts, ts:Date.now(), isNew:true});
+    all[week][exId].sort((a,b)=>b.pts-a.pts);
+    all[week][exId]=all[week][exId].slice(0,10); // max 10
+    // Rensa gamla veckor (behåll bara 4 veckor)
+    const weeks=Object.keys(all).sort().reverse();
+    weeks.slice(4).forEach(w=>delete all[w]);
+    localStorage.setItem('ordmorf_top',JSON.stringify(all));
+  }catch(e){}
+}
+
+function renderToplist(exId){
+  const scores=getTopScores(exId);
+  const box=document.getElementById('res-toplist-rows');
+  if(!scores.length){
+    box.innerHTML='<div class="toplist-empty">Inga resultat ännu denna vecka. Du är först!</div>';
+    return;
+  }
+  box.innerHTML=scores.map((s,i)=>{
+    const rc=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+    const d=new Date(s.ts);
+    const dateStr=d.getDate()+'/'+(d.getMonth()+1)+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+    const newCls=s.isNew?'tl-new':'';
+    return `<div class="tl-row ${newCls}"><span class="tl-rank ${rc}">${medal}</span><span class="tl-name">${esc(s.name)}</span><span class="tl-pts">${s.pts} p</span><span class="tl-date">${dateStr}</span></div>`;
+  }).join('');
+  // Rensa isNew-flaggor
+  try{
+    const all=JSON.parse(localStorage.getItem('ordmorf_top')||'{}');
+    const week=getWeekKey();
+    if(all[week]&&all[week][exId]) all[week][exId].forEach(s=>s.isNew=false);
+    localStorage.setItem('ordmorf_top',JSON.stringify(all));
+  }catch(e){}
 }
 
 // ══════════════════════════════════════════
@@ -1786,6 +1875,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   // AI generate
   $('ai-go').addEventListener('click',generateAI);
   $('ai-inp').addEventListener('keydown',e=>{if(e.key==='Enter') generateAI();});
+
+  // Player name
+  const pnInput=document.getElementById('player-name');
+  pnInput.value=localStorage.getItem('ordmorf_player')||'';
+  pnInput.addEventListener('input',()=>{
+    localStorage.setItem('ordmorf_player',pnInput.value.trim());
+  });
 
   spawnDeco();
 });
