@@ -1315,7 +1315,7 @@ function startGame(exId, exercise){
   g.score=0; g.streak=0; g.hstreak=0; g.falsePositives=0;
   g.targetShown=new Set(); g.targetHit=new Set(); g.targetPending=new Set();
   g.missedWords=[]; g.activeEls=[]; g.activeSet=new Set();
-  g.distSinceTarget=0;
+  g.distSinceTarget=0; g.lastTargetTime=Date.now();
 
   showScreen('playing');
   g.screen='playing';
@@ -1354,16 +1354,18 @@ function spawnWord(){
   }
 
   // Avgör om vi spawnar målord eller bomord
-  // Strategi: minst 2 bomord mellan varje målord, 40% chans efter det, tvinga vid 5+
-  const minDistBetween = 2;
-  const canSpawnTarget = unseenTargets.length>0 && g.distSinceTarget >= minDistBetween;
-  const forceTarget = canSpawnTarget && (g.targetPending.size===0 || g.distSinceTarget >= 5);
+  // Strategi: minst 1 bomord mellan, max 5 sek utan nytt målord
+  const now=Date.now();
+  const timeSinceTarget=now-(g.lastTargetTime||0);
+  const canSpawnTarget = unseenTargets.length>0 && g.distSinceTarget >= 1;
+  const forceTarget = canSpawnTarget && timeSinceTarget >= 5000;
   const targetChance = canSpawnTarget ? 0.40 : 0;
 
   if(forceTarget || (canSpawnTarget && Math.random() < targetChance)){
     word=unseenTargets[Math.floor(Math.random()*unseenTargets.length)];
     isTarget=true;
     g.distSinceTarget=0;
+    g.lastTargetTime=Date.now();
   } else {
     const dist=g.ex.distractorWords;
     word=dist[Math.floor(Math.random()*dist.length)];
