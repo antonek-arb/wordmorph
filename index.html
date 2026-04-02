@@ -111,6 +111,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
 .cp{position:fixed;pointer-events:none;z-index:200;animation:cpfly .85s ease-out forwards}
 @keyframes cpfly{0%{transform:translate(0,0) scale(1) rotate(0deg);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0) rotate(var(--cr));opacity:0}}
 
+/* AD BANNER */
+.ad-drop{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;justify-content:center;
+  transform:translateY(-100%);animation:ad-in .4s ease-out forwards}
+.ad-drop.out{animation:ad-out .35s ease-in forwards}
+@keyframes ad-in{0%{transform:translateY(-100%)}100%{transform:translateY(0)}}
+@keyframes ad-out{0%{transform:translateY(0)}100%{transform:translateY(-100%)}}
+.ad-inner{background:linear-gradient(135deg,rgba(30,30,50,.95),rgba(20,20,40,.95));
+  border-bottom:1px solid var(--glass-b);backdrop-filter:blur(8px);
+  width:100%;max-width:728px;min-height:90px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-dim);font-size:.75rem;letter-spacing:1px;text-transform:uppercase;
+  padding:8px 16px;text-align:center}
+.ad-inner .ad-placeholder{border:1px dashed rgba(255,255,255,.15);border-radius:8px;
+  padding:20px 40px;font-size:.7rem;color:var(--text-dim)}
+
 /* SCREENS */
 .screen{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;
   padding:20px;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .3s}
@@ -281,6 +296,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);position:rel
 </head>
 <body>
 <div id="bg"></div>
+
+<!-- Ad banner (slides down then away) -->
+<div class="ad-drop" id="ad-banner">
+  <div class="ad-inner">
+    <div class="ad-placeholder" id="ad-slot">
+      <!-- Byt ut denna div mot AdSense-kod eller annan annons -->
+      Annonsplats · 728×90
+    </div>
+  </div>
+</div>
 
 <!-- HUD (Del 1) -->
 <header id="hud">
@@ -1686,6 +1711,9 @@ function showResults(){
   renderToplist(g.exId);
 
   showScreen('results');
+
+  // Visa annons efter avslutad övning
+  setTimeout(()=>showAd(0, 4000), 800);
 }
 
 // ══════════════════════════════════════════
@@ -1870,6 +1898,25 @@ function spawnDeco(){
 }
 
 // ══════════════════════════════════════════
+//  AD BANNER
+// ══════════════════════════════════════════
+function showAd(delayMs=500, durationMs=4000){
+  const banner=document.getElementById('ad-banner');
+  if(!banner) return;
+  banner.classList.remove('out');
+  banner.style.display='flex';
+  // Reset animation
+  banner.style.animation='none';
+  void banner.offsetWidth;
+  banner.style.animation='';
+  banner.classList.remove('out');
+  setTimeout(()=>{
+    banner.classList.add('out');
+    setTimeout(()=>{banner.style.display='none';},400);
+  }, durationMs);
+}
+
+// ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
@@ -1930,6 +1977,9 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   spawnDeco();
+
+  // Visa annons vid sidladdning (efter kort fördröjning)
+  setTimeout(()=>showAd(0, 4000), 1500);
 });
 </script>
 </body>
